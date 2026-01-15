@@ -5,117 +5,135 @@ const ConfigContext = createContext();
 
 export const useConfig = () => useContext(ConfigContext);
 
+const API_URL = import.meta.env.PROD ? "/api" : "http://localhost:8000/api";
+
 export const ConfigProvider = ({ children }) => {
-    // Load from localStorage or fall back to defaults
-    const [schemes, setSchemes] = useState(() => {
-        const stored = localStorage.getItem('zp_schemes');
-        return stored ? JSON.parse(stored) : DEFAULT_SCHEMES;
-    });
+    // Initial State (Empty or Default, will be overwritten by fetch)
+    const [schemes, setSchemes] = useState(DEFAULT_SCHEMES);
+    const [nodalOfficers, setNodalOfficers] = useState(DEFAULT_OFFICERS);
+    const [sheetUrls, setSheetUrls] = useState(DEFAULT_URLS);
+    const [schemeGroups, setSchemeGroups] = useState([{
+        id: 'default_group',
+        title: 'General Schemes',
+        schemes: DEFAULT_SCHEMES
+    }]);
 
-    const [nodalOfficers, setNodalOfficers] = useState(() => {
-        const stored = localStorage.getItem('zp_officers');
-        return stored ? JSON.parse(stored) : DEFAULT_OFFICERS;
-    });
+    const [loading, setLoading] = useState(true);
 
-    const [sheetUrls, setSheetUrls] = useState(() => {
-        const stored = localStorage.getItem('zp_urls');
-        return stored ? JSON.parse(stored) : DEFAULT_URLS;
-    });
-
-    // New: Scheme Groups Layout
-    const [schemeGroups, setSchemeGroups] = useState(() => {
-        const stored = localStorage.getItem('zp_scheme_groups');
-        if (stored) return JSON.parse(stored);
-
-        // Default migration: All current schemes in one "General" group
-        // If schemes is from default, we might have default groups logic, but here we just lump them.
-        return [{
-            id: 'default_group',
-            title: 'General Schemes',
-            schemes: [] // Will be populated in effect if empty to ensure sync
-        }];
-    });
-
-    // Sync helper: If schemes exist but aren't in any group, add them to first group
+    // Fetch Config from Backend on Mount
     useEffect(() => {
-        setSchemeGroups(prevGroups => {
-            const allGroupedSchemes = new Set(prevGroups.flatMap(g => g.schemes));
-            const orphaned = schemes.filter(s => !allGroupedSchemes.has(s));
+        fetchConfig();
+    }, []);
 
-            if (orphaned.length > 0) {
-                const newGroups = [...prevGroups];
-                // Ensure at least one group exists
-                if (newGroups.length === 0) {
-                    newGroups.push({ id: 'default_group', title: 'General Schemes', schemes: [] });
-                }
-                newGroups[0].schemes = [...newGroups[0].schemes, ...orphaned];
-                return newGroups;
+    const fetchConfig = async () => {
+        try {
+            const res = await fetch(`${API_URL}/config`);
+            if (res.ok) {
+                const data = await res.json();
+                setSchemes(data.schemes);
+                setNodalOfficers(data.nodalOfficers);
+                setSheetUrls(data.sheetUrls);
+                setSchemeGroups(data.schemeGroups);
+            } else {
+                console.error("Failed to load config from backend");
             }
-            return prevGroups;
-        });
-    }, [schemes]); // Run when schemes list changes
+        } catch (err) {
+            console.error("Backend connection error:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    // Persistence Effects
-    useEffect(() => {
-        localStorage.setItem('zp_schemes', JSON.stringify(schemes));
-    }, [schemes]);
+    // Helper to Save Full Config to Backend
+    const saveToBackend = async (newConfig) => {
+        try {
+            await fetch(`${API_URL}/config`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newConfig)
+            });
+        } catch (err) {
+            console.error("Failed to save config:", err);
+        }
+    };
 
-    useEffect(() => {
-        localStorage.setItem('zp_officers', JSON.stringify(nodalOfficers));
-    }, [nodalOfficers]);
+    // Construct current full config object
+    const getCurrentConfig = () => ({
+        schemes,
+        nodalOfficers,
+        sheetUrls,
+        schemeGroups
+    });
 
-    useEffect(() => {
-        localStorage.setItem('zp_urls', JSON.stringify(sheetUrls));
-    }, [sheetUrls]);
+    // --- Actions ---
 
-    useEffect(() => {
-        localStorage.setItem('zp_scheme_groups', JSON.stringify(schemeGroups));
-    }, [schemeGroups]);
-
-
-    // Actions
     const addScheme = (name) => {
         if (!schemes.includes(name)) {
-            setSchemes(prev => [...prev, name]);
-            // Initialize config
-            setSheetUrls(prev => ({ ...prev, [name]: "" }));
-            setNodalOfficers(prev => ({ ...prev, [name]: { name: "Assign Officer", designation: "N/A" } }));
-            // It will be added to group by the Effect
+            const newSchemes = [...schemes, name];
+            const newUrls = { ...sheetUrls, [name]: "" };
+            const newOfficers = { ...nodalOfficers, [name]: { name: "Assign Officer", designation: "N/A" } };
+
+            // Add to first group by default
+            const newGroups = schemeGroups.map((g, i) =>
+                i === 0 ? { ...g, schemes: [...g.schemes, name] } : g
+            );
+
+            // Update State
+            setSchemes(newSchemes);
+            setSheetUrls(newUrls);
+            setNodalOfficers(newOfficers);
+            setSchemeGroups(newGroups);
+
+            // Sync
+            saveToBackend({
+                schemes: newSchemes,
+                nodalOfficers: newOfficers,
+                sheetUrls: newUrls,
+                schemeGroups: newGroups
+            });
             return true;
         }
         return false;
     };
 
     const updateSchemeUrl = (scheme, url) => {
-        setSheetUrls(prev => ({ ...prev, [scheme]: url }));
+        const newUrls = { ...sheetUrls, [scheme]: url };
+        setSheetUrls(newUrls);
+        saveToBackend({ ...getCurrentConfig(), sheetUrls: newUrls });
     };
 
     const updateOfficer = (scheme, { name, designation }) => {
-        setNodalOfficers(prev => ({
-            ...prev,
-            [scheme]: { name, designation }
-        }));
+        const newOfficers = { ...nodalOfficers, [scheme]: { name, designation } };
+        setNodalOfficers(newOfficers);
+        saveToBackend({ ...getCurrentConfig(), nodalOfficers: newOfficers });
     };
 
     const deleteScheme = (scheme) => {
-        setSchemes(prev => prev.filter(s => s !== scheme));
+        const newSchemes = schemes.filter(s => s !== scheme);
 
         const newUrls = { ...sheetUrls };
         delete newUrls[scheme];
-        setSheetUrls(newUrls);
 
         const newOfficers = { ...nodalOfficers };
         delete newOfficers[scheme];
-        setNodalOfficers(newOfficers);
 
-        // Remove from groups
-        setSchemeGroups(prev => prev.map(g => ({
+        const newGroups = schemeGroups.map(g => ({
             ...g,
             schemes: g.schemes.filter(s => s !== scheme)
-        })));
-    };
+        }));
 
-    // --- New Grouping & Renaming Actions ---
+        setSchemes(newSchemes);
+        setSheetUrls(newUrls);
+        setNodalOfficers(newOfficers);
+        setSchemeGroups(newGroups);
+
+        saveToBackend({
+            schemes: newSchemes,
+            nodalOfficers: newOfficers,
+            sheetUrls: newUrls,
+            schemeGroups: newGroups
+        });
+    };
 
     const renameScheme = (oldName, newName) => {
         if (schemes.includes(newName)) {
@@ -123,66 +141,64 @@ export const ConfigProvider = ({ children }) => {
             return;
         }
 
-        // 1. Update Schemes List
-        setSchemes(prev => prev.map(s => s === oldName ? newName : s));
+        const newSchemes = schemes.map(s => s === oldName ? newName : s);
 
-        // 2. Update Urls Dictionary Key
-        setSheetUrls(prev => {
-            const next = { ...prev };
-            next[newName] = next[oldName];
-            delete next[oldName];
-            return next;
-        });
+        const newUrls = { ...sheetUrls };
+        newUrls[newName] = newUrls[oldName];
+        delete newUrls[oldName];
 
-        // 3. Update Officers Dictionary Key
-        setNodalOfficers(prev => {
-            const next = { ...prev };
-            next[newName] = next[oldName];
-            delete next[oldName];
-            return next;
-        });
+        const newOfficers = { ...nodalOfficers };
+        newOfficers[newName] = newOfficers[oldName];
+        delete newOfficers[oldName];
 
-        // 4. Update Groups
-        setSchemeGroups(prev => prev.map(g => ({
+        const newGroups = schemeGroups.map(g => ({
             ...g,
             schemes: g.schemes.map(s => s === oldName ? newName : s)
-        })));
+        }));
+
+        setSchemes(newSchemes);
+        setSheetUrls(newUrls);
+        setNodalOfficers(newOfficers);
+        setSchemeGroups(newGroups);
+
+        saveToBackend({
+            schemes: newSchemes,
+            nodalOfficers: newOfficers,
+            sheetUrls: newUrls,
+            schemeGroups: newGroups
+        });
     };
 
     const addGroup = (title) => {
         const id = `group_${Date.now()}`;
-        setSchemeGroups(prev => [...prev, { id, title, schemes: [] }]);
+        const newGroups = [...schemeGroups, { id, title, schemes: [] }];
+        setSchemeGroups(newGroups);
+        saveToBackend({ ...getCurrentConfig(), schemeGroups: newGroups });
     };
 
     const deleteGroup = (groupId) => {
-        setSchemeGroups(prev => {
-            const groupToDelete = prev.find(g => g.id === groupId);
-            const remainingGroups = prev.filter(g => g.id !== groupId);
-
-            if (!groupToDelete) return prev; // Should not happen
-
-            // If we are deleting the last group, create a default one or just return empty (Effect will handle orphans)
-            // But let's verify logic:
-            // If deleting, schemes become orphaned. The Effect [schemes] will pick them up and add to first available.
-            return remainingGroups;
-        });
+        const newGroups = schemeGroups.filter(g => g.id !== groupId);
+        setSchemeGroups(newGroups);
+        saveToBackend({ ...getCurrentConfig(), schemeGroups: newGroups });
     };
 
     const updateGroup = (groupId, { title, schemes: newSchemes }) => {
-        setSchemeGroups(prev => prev.map(g => {
+        const newGroups = schemeGroups.map(g => {
             if (g.id !== groupId) return g;
             return {
                 ...g,
                 title: title ?? g.title,
                 schemes: newSchemes ?? g.schemes
             };
-        }));
+        });
+        setSchemeGroups(newGroups);
+        saveToBackend({ ...getCurrentConfig(), schemeGroups: newGroups });
     };
 
-    // Low-level helper or direct setter
     const setGroups = (newGroups) => {
         setSchemeGroups(newGroups);
-    }
+        saveToBackend({ ...getCurrentConfig(), schemeGroups: newGroups });
+    };
 
     return (
         <ConfigContext.Provider value={{
@@ -190,11 +206,11 @@ export const ConfigProvider = ({ children }) => {
             nodalOfficers,
             sheetUrls,
             schemeGroups,
+            loading,
             addScheme,
             updateSchemeUrl,
             updateOfficer,
             deleteScheme,
-            // New
             renameScheme,
             addGroup,
             deleteGroup,

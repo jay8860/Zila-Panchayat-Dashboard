@@ -16,15 +16,15 @@ import { useAuth } from '../../context/AuthContext';
 import { useDashboard } from '../../context/DashboardContext';
 
 const Sidebar = ({ activeTab, setActiveTab }) => {
-    const { logout } = useAuth();
+    const { logout, userRole } = useAuth();
     const { syncData, syncStatus } = useDashboard();
     const { theme, toggleTheme } = useTheme();
 
     const menuItems = [
         { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
         { id: 'action-hub', icon: MessageSquareShare, label: 'Action Hub' },
-        { id: 'settings', icon: Settings, label: 'Admin Settings' },
-    ];
+        { id: 'settings', icon: Settings, label: 'Admin Settings', role: 'admin' },
+    ].filter(item => !item.role || item.role === userRole);
 
     const getSyncIcon = () => {
         switch (syncStatus.state) {

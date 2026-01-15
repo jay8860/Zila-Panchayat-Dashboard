@@ -6,25 +6,38 @@ export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [userRole, setUserRole] = useState('viewer'); // 'admin' | 'viewer'
     const [checking, setChecking] = useState(true);
 
     // MVP: Hardcoded access code
-    // In production, this would be an env var or real backend auth
-    const ACCESS_CODE = "2025";
+    const ADMIN_CODE = "2025";
+    const VIEWER_CODE = "1234";
 
     useEffect(() => {
         // Check localStorage on mount
         const storedAuth = localStorage.getItem('zp_auth_token');
-        if (storedAuth === ACCESS_CODE) {
+        const storedRole = localStorage.getItem('zp_user_role');
+
+        if (storedAuth) {
             setIsAuthenticated(true);
+            setUserRole(storedRole || 'viewer');
         }
         setChecking(false);
     }, []);
 
     const login = (code) => {
-        if (code === ACCESS_CODE) {
-            localStorage.setItem('zp_auth_token', code);
+        if (code === ADMIN_CODE) {
+            localStorage.setItem('zp_auth_token', 'valid');
+            localStorage.setItem('zp_user_role', 'admin');
             setIsAuthenticated(true);
+            setUserRole('admin');
+            return true;
+        }
+        if (code === VIEWER_CODE) {
+            localStorage.setItem('zp_auth_token', 'valid');
+            localStorage.setItem('zp_user_role', 'viewer');
+            setIsAuthenticated(true);
+            setUserRole('viewer');
             return true;
         }
         return false;
@@ -32,11 +45,13 @@ export const AuthProvider = ({ children }) => {
 
     const logout = () => {
         localStorage.removeItem('zp_auth_token');
+        localStorage.removeItem('zp_user_role');
         setIsAuthenticated(false);
+        setUserRole('viewer'); // reset to safe default
     };
 
     return (
-        <AuthContext.Provider value={{ isAuthenticated, login, logout, checking }}>
+        <AuthContext.Provider value={{ isAuthenticated, userRole, login, logout, checking }}>
             {children}
         </AuthContext.Provider>
     );

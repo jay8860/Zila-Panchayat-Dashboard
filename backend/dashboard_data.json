@@ -1,0 +1,44 @@
+{
+    "schemes": [
+        "MNREGA",
+        "Swachh Bharat Mission (SBM)",
+        "Pradhan Mantri Awas Yojana (PMAY)",
+        "National Rural Livelihood Mission (NRLM)"
+    ],
+    "nodalOfficers": {
+        "MNREGA": {
+            "name": "Mr. Rajesh Sharma",
+            "designation": "Project Officer"
+        },
+        "Swachh Bharat Mission (SBM)": {
+            "name": "Ms. Priya Singh",
+            "designation": "District Consultant"
+        },
+        "Pradhan Mantri Awas Yojana (PMAY)": {
+            "name": "Mr. Amit Verma",
+            "designation": "Housing Coordinator"
+        },
+        "National Rural Livelihood Mission (NRLM)": {
+            "name": "Ms. Sunita Gupta",
+            "designation": "District Manager"
+        }
+    },
+    "sheetUrls": {
+        "MNREGA": "",
+        "Swachh Bharat Mission (SBM)": "",
+        "Pradhan Mantri Awas Yojana (PMAY)": "",
+        "National Rural Livelihood Mission (NRLM)": ""
+    },
+    "schemeGroups": [
+        {
+            "id": "default_group",
+            "title": "General Schemes",
+            "schemes": [
+                "MNREGA",
+                "Swachh Bharat Mission (SBM)",
+                "Pradhan Mantri Awas Yojana (PMAY)",
+                "National Rural Livelihood Mission (NRLM)"
+            ]
+        }
+    ]
+}

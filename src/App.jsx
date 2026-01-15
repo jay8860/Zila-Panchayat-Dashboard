@@ -136,7 +136,7 @@ const DashboardView = ({ onOpenSettings, onOpenBriefing }) => {
 };
 
 const AuthenticatedApp = () => {
-  const { isAuthenticated, checking } = useAuth();
+  const { isAuthenticated, checking, userRole } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
 
   if (checking) return null;
@@ -146,9 +146,10 @@ const AuthenticatedApp = () => {
   }
 
   const handleOpenSettings = (schemeName) => {
-    // Navigate to Admin/Settings
-    setActiveTab('settings');
-    // Ideally we'd pass the schemeName to prompt the specific tab, but for now just opening Settings is MVP.
+    // Navigate to Admin/Settings if allowed
+    if (userRole === 'admin') {
+      setActiveTab('settings');
+    }
   };
 
   return (
@@ -166,7 +167,7 @@ const AuthenticatedApp = () => {
                 />
               )}
               {activeTab === 'action-hub' && <ActionHub />}
-              {activeTab === 'settings' && <AdminPanel />}
+              {activeTab === 'settings' && userRole === 'admin' && <AdminPanel />}
             </ErrorBoundary>
           </main>
         </div>
