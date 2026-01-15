@@ -6,7 +6,7 @@ const AdminPanel = () => {
     const {
         schemes, nodalOfficers, sheetUrls, schemeGroups,
         updateSchemeUrl, updateOfficer, addScheme, deleteScheme,
-        renameScheme, addGroup, deleteGroup, updateGroup, setGroups
+        renameScheme, addGroup, deleteGroup, updateGroup, moveSchemeGroup, setGroups
     } = useConfig();
 
     const [activeTab, setActiveTab] = useState('urls'); // urls, officers, schemes
@@ -47,16 +47,7 @@ const AdminPanel = () => {
 
     const moveScheme = (scheme, fromGroupId, toGroupId) => {
         if (fromGroupId === toGroupId) return;
-
-        const fromGroup = schemeGroups.find(g => g.id === fromGroupId);
-        const toGroup = schemeGroups.find(g => g.id === toGroupId);
-
-        if (!fromGroup || !toGroup) return;
-
-        // Update From Group
-        updateGroup(fromGroupId, { schemes: fromGroup.schemes.filter(s => s !== scheme) });
-        // Update To Group
-        updateGroup(toGroupId, { schemes: [...toGroup.schemes, scheme] });
+        moveSchemeGroup(scheme, fromGroupId, toGroupId);
     };
 
     const moveSchemeOrder = (groupId, currentIndex, direction) => {

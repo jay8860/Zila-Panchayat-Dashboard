@@ -195,6 +195,22 @@ export const ConfigProvider = ({ children }) => {
         saveToBackend({ ...getCurrentConfig(), schemeGroups: newGroups });
     };
 
+    const moveSchemeGroup = (scheme, fromGroupId, toGroupId) => {
+        const newGroups = schemeGroups.map(g => {
+            if (g.id === fromGroupId) {
+                return { ...g, schemes: g.schemes.filter(s => s !== scheme) };
+            }
+            if (g.id === toGroupId) {
+                // Prevent duplicates if something is weird
+                if (g.schemes.includes(scheme)) return g;
+                return { ...g, schemes: [...g.schemes, scheme] };
+            }
+            return g;
+        });
+        setSchemeGroups(newGroups);
+        saveToBackend({ ...getCurrentConfig(), schemeGroups: newGroups });
+    };
+
     const setGroups = (newGroups) => {
         setSchemeGroups(newGroups);
         saveToBackend({ ...getCurrentConfig(), schemeGroups: newGroups });
@@ -215,6 +231,7 @@ export const ConfigProvider = ({ children }) => {
             addGroup,
             deleteGroup,
             updateGroup,
+            moveSchemeGroup,
             setGroups
         }}>
             {children}
