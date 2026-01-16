@@ -1,43 +1,192 @@
 {
     "schemes": [
-        "MNREGA",
-        "Swachh Bharat Mission (SBM)",
-        "Pradhan Mantri Awas Yojana (PMAY)",
-        "National Rural Livelihood Mission (NRLM)"
+        "PMAY",
+        "Spl - PMAY",
+        "NNN - PMAY",
+        "MMAY",
+        "JSA Phase 1",
+        "JSA Phase 2",
+        "AWC - VBGRAM",
+        "PDS - VBGRAM",
+        "GP Bhawan - VBGRAM",
+        "NNN - VBGRAM",
+        "Yuktdhara",
+        "NNN - SBM",
+        "LWE - SBM",
+        "Pariwar Saturation - NRLM",
+        "Bank Linkage Fresh - NRLM",
+        "Women Led Financing - NRLM",
+        "DAR NRLM",
+        "DAR Income - NRLM",
+        "Myntra Device Purchase",
+        "Samarth Panchayat - Taxpayers",
+        "Bank Linkage Renewal - NRLM"
     ],
     "nodalOfficers": {
-        "MNREGA": {
-            "name": "Mr. Rajesh Sharma",
-            "designation": "Project Officer"
+        "PMAY": {
+            "name": "Assign Officer",
+            "designation": "N/A"
         },
-        "Swachh Bharat Mission (SBM)": {
-            "name": "Ms. Priya Singh",
-            "designation": "District Consultant"
+        "Spl - PMAY": {
+            "name": "Assign Officer",
+            "designation": "N/A"
         },
-        "Pradhan Mantri Awas Yojana (PMAY)": {
-            "name": "Mr. Amit Verma",
-            "designation": "Housing Coordinator"
+        "NNN - PMAY": {
+            "name": "Assign Officer",
+            "designation": "N/A"
         },
-        "National Rural Livelihood Mission (NRLM)": {
-            "name": "Ms. Sunita Gupta",
-            "designation": "District Manager"
+        "MMAY": {
+            "name": "Assign Officer",
+            "designation": "N/A"
+        },
+        "JSA Phase 1": {
+            "name": "Assign Officer",
+            "designation": "N/A"
+        },
+        "JSA Phase 2": {
+            "name": "Assign Officer",
+            "designation": "N/A"
+        },
+        "AWC - VBGRAM": {
+            "name": "Assign Officer",
+            "designation": "N/A"
+        },
+        "PDS - VBGRAM": {
+            "name": "Assign Officer",
+            "designation": "N/A"
+        },
+        "GP Bhawan - VBGRAM": {
+            "name": "Assign Officer",
+            "designation": "N/A"
+        },
+        "NNN - VBGRAM": {
+            "name": "Assign Officer",
+            "designation": "N/A"
+        },
+        "Yuktdhara": {
+            "name": "Assign Officer",
+            "designation": "N/A"
+        },
+        "NNN - SBM": {
+            "name": "Assign Officer",
+            "designation": "N/A"
+        },
+        "LWE - SBM": {
+            "name": "Assign Officer",
+            "designation": "N/A"
+        },
+        "Pariwar Saturation - NRLM": {
+            "name": "Assign Officer",
+            "designation": "N/A"
+        },
+        "Women Led Financing - NRLM": {
+            "name": "Assign Officer",
+            "designation": "N/A"
+        },
+        "DAR NRLM": {
+            "name": "Assign Officer",
+            "designation": "N/A"
+        },
+        "DAR Income - NRLM": {
+            "name": "Assign Officer",
+            "designation": "N/A"
+        },
+        "Myntra Device Purchase": {
+            "name": "Assign Officer",
+            "designation": "N/A"
+        },
+        "Samarth Panchayat - Taxpayers": {
+            "name": "Assign Officer",
+            "designation": "N/A"
+        },
+        "Bank Linkage Renewal - NRLM": {
+            "name": "Assign Officer",
+            "designation": "N/A"
+        },
+        "Bank Linkage Fresh - NRLM": {
+            "name": "Assign Officer",
+            "designation": "N/A"
         }
     },
     "sheetUrls": {
-        "MNREGA": "",
-        "Swachh Bharat Mission (SBM)": "",
-        "Pradhan Mantri Awas Yojana (PMAY)": "",
-        "National Rural Livelihood Mission (NRLM)": ""
+        "PMAY": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTzKPa7DLZVeOUJzGWYTuC5cLmbEjV-I2Wh9acB-cydNFQwii2d_qg11jDWxJhnfODeSuv5KPdsOetU/pubhtml?gid=0&single=true",
+        "Spl - PMAY": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTzKPa7DLZVeOUJzGWYTuC5cLmbEjV-I2Wh9acB-cydNFQwii2d_qg11jDWxJhnfODeSuv5KPdsOetU/pubhtml?gid=1441267455&single=true",
+        "NNN - PMAY": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTzKPa7DLZVeOUJzGWYTuC5cLmbEjV-I2Wh9acB-cydNFQwii2d_qg11jDWxJhnfODeSuv5KPdsOetU/pubhtml?gid=960638649&single=true",
+        "MMAY": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTzKPa7DLZVeOUJzGWYTuC5cLmbEjV-I2Wh9acB-cydNFQwii2d_qg11jDWxJhnfODeSuv5KPdsOetU/pubhtml?gid=1078988846&single=true",
+        "JSA Phase 1": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTzKPa7DLZVeOUJzGWYTuC5cLmbEjV-I2Wh9acB-cydNFQwii2d_qg11jDWxJhnfODeSuv5KPdsOetU/pub?gid=1021040699&single=true&output=csv",
+        "JSA Phase 2": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTzKPa7DLZVeOUJzGWYTuC5cLmbEjV-I2Wh9acB-cydNFQwii2d_qg11jDWxJhnfODeSuv5KPdsOetU/pub?gid=1179983276&single=true&output=csv",
+        "AWC - VBGRAM": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTzKPa7DLZVeOUJzGWYTuC5cLmbEjV-I2Wh9acB-cydNFQwii2d_qg11jDWxJhnfODeSuv5KPdsOetU/pub?gid=566650955&single=true&output=csv",
+        "PDS - VBGRAM": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTzKPa7DLZVeOUJzGWYTuC5cLmbEjV-I2Wh9acB-cydNFQwii2d_qg11jDWxJhnfODeSuv5KPdsOetU/pub?gid=20360312&single=true&output=csv",
+        "GP Bhawan - VBGRAM": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTzKPa7DLZVeOUJzGWYTuC5cLmbEjV-I2Wh9acB-cydNFQwii2d_qg11jDWxJhnfODeSuv5KPdsOetU/pub?gid=1612284308&single=true&output=csv",
+        "NNN - VBGRAM": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTzKPa7DLZVeOUJzGWYTuC5cLmbEjV-I2Wh9acB-cydNFQwii2d_qg11jDWxJhnfODeSuv5KPdsOetU/pub?gid=1491266536&single=true&output=csv",
+        "Yuktdhara": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTzKPa7DLZVeOUJzGWYTuC5cLmbEjV-I2Wh9acB-cydNFQwii2d_qg11jDWxJhnfODeSuv5KPdsOetU/pub?gid=1837566088&single=true&output=csv",
+        "NNN - SBM": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTzKPa7DLZVeOUJzGWYTuC5cLmbEjV-I2Wh9acB-cydNFQwii2d_qg11jDWxJhnfODeSuv5KPdsOetU/pub?gid=1988188525&single=true&output=csv",
+        "LWE - SBM": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTzKPa7DLZVeOUJzGWYTuC5cLmbEjV-I2Wh9acB-cydNFQwii2d_qg11jDWxJhnfODeSuv5KPdsOetU/pubhtml?gid=1993356611&single=true",
+        "Pariwar Saturation - NRLM": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTzKPa7DLZVeOUJzGWYTuC5cLmbEjV-I2Wh9acB-cydNFQwii2d_qg11jDWxJhnfODeSuv5KPdsOetU/pubhtml?gid=1102053304&single=true",
+        "Women Led Financing - NRLM": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTzKPa7DLZVeOUJzGWYTuC5cLmbEjV-I2Wh9acB-cydNFQwii2d_qg11jDWxJhnfODeSuv5KPdsOetU/pubhtml?gid=313103742&single=true",
+        "DAR NRLM": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTzKPa7DLZVeOUJzGWYTuC5cLmbEjV-I2Wh9acB-cydNFQwii2d_qg11jDWxJhnfODeSuv5KPdsOetU/pubhtml?gid=995491369&single=true",
+        "DAR Income - NRLM": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTzKPa7DLZVeOUJzGWYTuC5cLmbEjV-I2Wh9acB-cydNFQwii2d_qg11jDWxJhnfODeSuv5KPdsOetU/pubhtml?gid=464672580&single=true",
+        "Myntra Device Purchase": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTzKPa7DLZVeOUJzGWYTuC5cLmbEjV-I2Wh9acB-cydNFQwii2d_qg11jDWxJhnfODeSuv5KPdsOetU/pubhtml?gid=1689211237&single=true",
+        "Samarth Panchayat - Taxpayers": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTzKPa7DLZVeOUJzGWYTuC5cLmbEjV-I2Wh9acB-cydNFQwii2d_qg11jDWxJhnfODeSuv5KPdsOetU/pubhtml?gid=920954477&single=true",
+        "Bank Linkage Renewal - NRLM": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTzKPa7DLZVeOUJzGWYTuC5cLmbEjV-I2Wh9acB-cydNFQwii2d_qg11jDWxJhnfODeSuv5KPdsOetU/pubhtml?gid=1388433194&single=true",
+        "Bank Linkage Fresh - NRLM": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTzKPa7DLZVeOUJzGWYTuC5cLmbEjV-I2Wh9acB-cydNFQwii2d_qg11jDWxJhnfODeSuv5KPdsOetU/pubhtml?gid=321373274&single=true"
     },
     "schemeGroups": [
         {
-            "id": "default_group",
-            "title": "General Schemes",
+            "id": "group_1768476789134",
+            "title": "PMAY",
             "schemes": [
-                "MNREGA",
-                "Swachh Bharat Mission (SBM)",
-                "Pradhan Mantri Awas Yojana (PMAY)",
-                "National Rural Livelihood Mission (NRLM)"
+                "PMAY",
+                "Spl - PMAY",
+                "NNN - PMAY",
+                "MMAY"
+            ]
+        },
+        {
+            "id": "group_1768477226468",
+            "title": "VBGRAM",
+            "schemes": [
+                "JSA Phase 1",
+                "JSA Phase 2",
+                "AWC - VBGRAM",
+                "PDS - VBGRAM",
+                "GP Bhawan - VBGRAM",
+                "NNN - VBGRAM",
+                "Yuktdhara"
+            ]
+        },
+        {
+            "id": "group_1768476795696",
+            "title": "SBM",
+            "schemes": [
+                "NNN - SBM",
+                "LWE - SBM"
+            ]
+        },
+        {
+            "id": "group_1768476799895",
+            "title": "NRLM",
+            "schemes": [
+                "Pariwar Saturation - NRLM",
+                "Women Led Financing - NRLM",
+                "DAR NRLM",
+                "DAR Income - NRLM",
+                "Bank Linkage Fresh - NRLM",
+                "Bank Linkage Renewal - NRLM"
+            ]
+        },
+        {
+            "id": "default_group",
+            "title": "Panchayat Department",
+            "schemes": [
+                "Samarth Panchayat - Taxpayers"
+            ]
+        },
+        {
+            "id": "group_1768476805880",
+            "title": "Misc",
+            "schemes": [
+                "Myntra Device Purchase"
             ]
         }
     ]
