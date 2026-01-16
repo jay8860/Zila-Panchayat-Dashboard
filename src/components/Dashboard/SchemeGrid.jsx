@@ -2,7 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import { useDashboard } from '../../context/DashboardContext';
 import { useConfig } from '../../context/ConfigContext';
 import { ArrowRight, TrendingUp, AlertCircle, Settings2, FileText, Activity, Clock } from 'lucide-react';
-import { useEffect, useMemo } from 'react';
+
 
 const SchemeCard = ({ scheme, onClick, onEdit, onBriefing }) => {
     const { getDistrictAverage, nodalOfficers, data } = useDashboard();
