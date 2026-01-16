@@ -9,7 +9,6 @@ import GPTable from './components/Dashboard/GPTable';
 import ActionHub from './components/ActionHub/ActionHub';
 import AdminPanel from './components/Admin/AdminPanel';
 import Login from './components/Auth/Login';
-import AiSearch from './components/AiAssistant/AiSearch';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ThemeProvider } from './context/ThemeContext';
 
@@ -149,7 +148,6 @@ const DashboardView = ({ onOpenSettings, onOpenBriefing }) => {
 const AuthenticatedApp = () => {
   const { isAuthenticated, checking, userRole } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [aiOpen, setAiOpen] = useState(false);
 
   if (checking) return null;
 
