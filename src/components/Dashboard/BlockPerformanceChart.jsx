@@ -6,94 +6,79 @@ import { useDashboard } from '../../context/DashboardContext';
 const BlockPerformanceChart = ({ scheme, onBack, onBlockClick }) => {
     const { data } = useDashboard();
 
-    const chartData = useMemo(() => {
+    const [selectedMetric, setSelectedMetric] = React.useState('');
+
+    // Extract available numeric keys
+    const availableMetrics = useMemo(() => {
         const schemeData = data[scheme] || [];
         if (schemeData.length === 0) return [];
 
-        // Identify keys
-        const keys = Object.keys(schemeData[0]);
-        // Progress Key (Fallback)
-        let progressKey = keys.find(k => k.toLowerCase().includes('sanction %') || k.toLowerCase().includes('sanction percentage'));
-        if (!progressKey) progressKey = keys.find(k => k.toLowerCase().includes('completion %'));
-        if (!progressKey) progressKey = keys.find(k => k.toLowerCase().includes("(%)") || k.toLowerCase().includes("percentage") || k.includes("%"));
+        const firstRow = schemeData[0];
+        return Object.keys(firstRow).filter(key => {
+            if (key.toLowerCase().includes('block')) return false;
+            // Check if value is numeric-ish
+            const val = firstRow[key];
+            return !isNaN(parseFloat(val));
+        });
+    }, [data, scheme]);
 
-        // Numerator/Denominator Keys
-        const targetKey = keys.find(k => k.toLowerCase().includes('target') && !k.toLowerCase().includes('achievement'));
-        let doneKey = keys.find(k => k.toLowerCase().includes('sanction done'));
-        if (!doneKey) doneKey = keys.find(k => k.toLowerCase().includes('registration done'));
-        if (!doneKey) doneKey = keys.find(k => k.toLowerCase().includes('completed') || k.toLowerCase().includes('achievement'));
+    // Set default metric on load
+    React.useEffect(() => {
+        if (availableMetrics.length > 0 && !selectedMetric) {
+            // Smart Default: Look for %, then Target/Done, else first
+            const percentKey = availableMetrics.find(k => k.includes('%') || k.toLowerCase().includes('percent'));
+            setSelectedMetric(percentKey || availableMetrics[0]);
+        }
+    }, [availableMetrics]);
 
-        const blockKey = keys.find(k => k.toLowerCase().includes('block')) || "Block";
+    const chartData = useMemo(() => {
+        const schemeData = data[scheme] || [];
+        if (schemeData.length === 0 || !selectedMetric) return [];
+
+        const blockKey = Object.keys(schemeData[0]).find(k => k.toLowerCase().includes('block')) || "Block";
 
         // Aggregate by Block
         const blockMap = {};
         schemeData.forEach(row => {
             const block = row[blockKey];
             if (!block) return;
-
             const safeBlock = block.trim();
+
             if (!blockMap[safeBlock]) {
-                blockMap[safeBlock] = { total: 0, count: 0, numerator: 0, denominator: 0 };
+                blockMap[safeBlock] = { total: 0, count: 0 };
             }
 
-            if (targetKey && doneKey) {
-                blockMap[safeBlock].denominator += parseFloat(row[targetKey] || 0);
-                blockMap[safeBlock].numerator += parseFloat(row[doneKey] || 0);
-            } else if (progressKey) {
-                blockMap[safeBlock].total += parseFloat(row[progressKey] || 0);
-            }
+            const val = parseFloat(row[selectedMetric] || 0);
+            blockMap[safeBlock].total += val;
             blockMap[safeBlock].count += 1;
         });
 
         const aggregated = Object.keys(blockMap).map(block => {
+            // If it looks like a percentage (0-100 range likely), avg it. Else sum it.
+            // Heuristic: If name contains %, average. Else Sum.
+            const isPercentage = selectedMetric.includes('%') || selectedMetric.toLowerCase().includes('percent');
+
             let val = 0;
-            // Prefer Weighted Average
-            if (targetKey && doneKey && blockMap[block].denominator > 0) {
-                val = Math.round((blockMap[block].numerator / blockMap[block].denominator) * 100);
-            } else if (progressKey && blockMap[block].count > 0) {
-                val = Math.round(blockMap[block].total / blockMap[block].count);
+            if (isPercentage) {
+                val = blockMap[block].count > 0 ? Math.round(blockMap[block].total / blockMap[block].count) : 0;
+            } else {
+                val = Math.round(blockMap[block].total);
             }
 
             return {
                 name: block,
                 value: val,
-                rawKey: progressKey || doneKey,
                 isTotal: block.toLowerCase().includes('total')
             };
         });
 
-        // Ensure "Total" exists. If not, calculate it from the other blocks.
-        const hasTotal = aggregated.some(item => item.isTotal);
-        if (!hasTotal && aggregated.length > 0) {
-            let totalVal = 0;
-            if (targetKey && doneKey) {
-                // Sum of all blocks
-                const grandNum = Object.values(blockMap).reduce((acc, curr) => acc + curr.numerator, 0);
-                const grandDenom = Object.values(blockMap).reduce((acc, curr) => acc + curr.denominator, 0);
-                if (grandDenom > 0) {
-                    totalVal = Math.round((grandNum / grandDenom) * 100);
-                }
-            } else {
-                // Average of averages
-                const sumVals = aggregated.reduce((acc, curr) => acc + curr.value, 0);
-                totalVal = Math.round(sumVals / aggregated.length);
-            }
-
-            aggregated.push({
-                name: "District Total",
-                value: totalVal,
-                rawKey: "Calculated",
-                isTotal: true
-            });
-        }
-
-        // Sort: Total first, then Descending Value
+        // Sort
         return aggregated.sort((a, b) => {
             if (a.isTotal) return -1;
             if (b.isTotal) return 1;
             return b.value - a.value;
         });
-    }, [data, scheme]);
+    }, [data, scheme, selectedMetric]);
 
     // Handle click on bar
     const handleBarClick = (data, index) => {
@@ -136,6 +121,20 @@ const BlockPerformanceChart = ({ scheme, onBack, onBlockClick }) => {
                     <h2 className="text-2xl font-bold">{scheme}</h2>
                     <p className="text-muted-foreground">Block-wise Performance Analysis</p>
                 </div>
+            </div>
+
+            {/* Metric Selector */}
+            <div className="mb-4">
+                <label className="text-sm text-muted-foreground mr-2">Display Metric:</label>
+                <select
+                    value={selectedMetric}
+                    onChange={(e) => setSelectedMetric(e.target.value)}
+                    className="bg-card border border-border rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                    {availableMetrics.map(m => (
+                        <option key={m} value={m}>{m.replace('$', '').trim()}</option>
+                    ))}
+                </select>
             </div>
 
             <div className="flex-1 w-full min-h-[400px] bg-card/50 rounded-xl p-4 border border-border/50">

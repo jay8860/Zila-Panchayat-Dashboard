@@ -32,16 +32,25 @@ class Group(BaseModel):
     title: str
     schemes: List[str]
 
+class SchemeSnapshot(BaseModel):
+    prevDate: str = ""
+    prevValue: float = 0.0
+    currDate: str = ""
+    currValue: float = 0.0
+    lastUpdated: str = "" # ISO timestamp
+
 class DashboardConfig(BaseModel):
     schemes: List[str]
     hiddenSchemes: List[str] = []  # Schemes hidden from normal users
     nodalOfficers: Dict[str, Officer]
     sheetUrls: Dict[str, str]
     schemeGroups: List[Group]
+    snapshots: Dict[str, SchemeSnapshot] = {}
 
 # --- Default Data (Fallback) ---
 DEFAULT_DATA = {
     "hiddenSchemes": [],
+    "snapshots": {},
     "schemes": [
         "PMAY",
         "Spl - PMAY",
@@ -246,6 +255,8 @@ def load_db() -> DashboardConfig:
             # Migration for old data
             if "hiddenSchemes" not in data:
                 data["hiddenSchemes"] = []
+            if "snapshots" not in data:
+                data["snapshots"] = {}
             return DashboardConfig(**data)
     except Exception as e:
         print(f"Error loading DB: {e}")

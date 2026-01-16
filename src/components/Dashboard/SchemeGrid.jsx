@@ -1,11 +1,78 @@
-import React from 'react';
-import { ArrowRight, TrendingUp, AlertCircle, Settings2, FileText } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useDashboard } from '../../context/DashboardContext';
+import { useConfig } from '../../context/ConfigContext';
+import { ArrowRight, TrendingUp, AlertCircle, Settings2, FileText, Activity, Clock } from 'lucide-react';
+import { useEffect, useMemo } from 'react';
 
 const SchemeCard = ({ scheme, onClick, onEdit, onBriefing }) => {
-    const { getDistrictAverage, nodalOfficers } = useDashboard();
+    const { getDistrictAverage, nodalOfficers, data } = useDashboard();
+    const { snapshots, updateSnapshot } = useConfig();
+
     const average = getDistrictAverage(scheme);
     const officer = nodalOfficers[scheme] || { name: 'Unassigned', designation: 'N/A' };
+
+    // --- Daily Progress Logic ---
+    const { headlineValue, headlineLabel, progressDiff, isStale } = useMemo(() => {
+        const schemeData = data[scheme] || [];
+        if (schemeData.length === 0) return {};
+
+        // 1. Find Headline Column ($)
+        const keys = Object.keys(schemeData[0]);
+        const headlineKey = keys.find(k => k.includes('$'));
+
+        let val = 0;
+        let diff = null;
+        let stale = false;
+
+        if (headlineKey) {
+            // Sum it up
+            val = schemeData.reduce((acc, row) => {
+                const num = parseFloat(row[headlineKey] || 0);
+                return acc + (isNaN(num) ? 0 : num);
+            }, 0);
+
+            // Compare with Snapshot
+            const snap = snapshots[scheme];
+            if (snap) {
+                // Formatting date to check equality
+                const today = new Date().toISOString().split('T')[0];
+                if (snap.currDate === today) {
+                    // Start of day diff (Curr - Prev)
+                    diff = val - snap.prevValue;
+                } else {
+                    // If no snapshot for today yet, diff is (Current - LastKnown)
+                    // But usually useEffect below handles the update first.
+                    // Let's rely on prevValue which persists across days.
+                    diff = val - snap.currValue; // Actually prevValue is better if shifted.
+                }
+
+                // Stale Check: If > 11 AM and val == prevValue (no change for > 1 day)
+                // Actually user said "if by 11 AM, there is no change... show it".
+                const now = new Date();
+                const cutoff = new Date();
+                cutoff.setHours(11, 0, 0, 0);
+
+                if (now > cutoff && diff === 0) {
+                    stale = true;
+                }
+            }
+        }
+
+        return {
+            headlineValue: val,
+            headlineLabel: headlineKey ? headlineKey.replace('$', '').trim() : null,
+            progressDiff: diff,
+            isStale: stale
+        };
+    }, [data, scheme, snapshots]);
+
+    // --- Sync Logic ---
+    useEffect(() => {
+        if (headlineValue !== undefined && headlineValue !== 0) {
+            updateSnapshot(scheme, headlineValue);
+        }
+    }, [headlineValue, scheme, updateSnapshot]);
+
 
     // Determine color based on average (if it's a number)
     let statusColor = "text-yellow-500";
@@ -38,11 +105,30 @@ const SchemeCard = ({ scheme, onClick, onEdit, onBriefing }) => {
                     )}
                 </div>
 
-                <div className="mb-4">
-                    <div className="text-3xl font-bold font-mono">
-                        {average}{typeof average === 'number' ? '%' : ''}
+                <div className="mb-4 flex items-end justify-between">
+                    <div>
+                        <div className="text-3xl font-bold font-mono">
+                            {average}{typeof average === 'number' ? '%' : ''}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">District Average</p>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">District Average</p>
+
+                    {/* Daily Progress Section */}
+                    {headlineLabel && (
+                        <div className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                                <span className={`text-xl font-bold font-mono ${progressDiff > 0 ? 'text-emerald-400' : 'text-foreground'}`}>
+                                    {headlineValue.toLocaleString()}
+                                </span>
+                                {progressDiff !== null && progressDiff !== 0 && (
+                                    <div className={`text-xs px-1.5 py-0.5 rounded-full flex items-center ${progressDiff > 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                                        {progressDiff > 0 ? '+' : ''}{progressDiff.toLocaleString()}
+                                    </div>
+                                )}
+                            </div>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{headlineLabel}</p>
+                        </div>
+                    )}
                 </div>
 
                 <div className="border-t border-border pt-3 mt-3 flex justify-between items-center">
@@ -73,6 +159,14 @@ const SchemeCard = ({ scheme, onClick, onEdit, onBriefing }) => {
                         <ArrowRight size={14} />
                     </div>
                 </div>
+
+                {/* Stale Warning Footer */}
+                {isStale && (
+                    <div className="mt-3 pt-2 border-t border-red-500/20 flex items-center space-x-2 text-red-400 animate-pulse">
+                        <Clock size={12} />
+                        <span className="text-[10px] font-medium">No update by 11:00 AM</span>
+                    </div>
+                )}
             </div>
         </div >
     );

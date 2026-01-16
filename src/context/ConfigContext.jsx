@@ -18,6 +18,7 @@ export const ConfigProvider = ({ children }) => {
         schemes: DEFAULT_SCHEMES
     }]);
     const [hiddenSchemes, setHiddenSchemes] = useState([]);
+    const [snapshots, setSnapshots] = useState({});
 
     const [loading, setLoading] = useState(true);
 
@@ -60,6 +61,7 @@ export const ConfigProvider = ({ children }) => {
                     setNodalOfficers(migratedConfig.nodalOfficers);
                     setSheetUrls(migratedConfig.sheetUrls);
                     setSchemeGroups(migratedConfig.schemeGroups);
+                    setSnapshots(migratedConfig.snapshots || {});
 
                     // Push to Backend
                     await saveToBackend(migratedConfig);
@@ -70,6 +72,7 @@ export const ConfigProvider = ({ children }) => {
                     setNodalOfficers(data.nodalOfficers);
                     setSheetUrls(data.sheetUrls);
                     setSchemeGroups(data.schemeGroups);
+                    setSnapshots(data.snapshots || {});
                 }
             } else {
                 console.error("Failed to load config from backend");
@@ -100,7 +103,8 @@ export const ConfigProvider = ({ children }) => {
         hiddenSchemes,
         nodalOfficers,
         sheetUrls,
-        schemeGroups
+        schemeGroups,
+        snapshots
     });
 
     // --- Actions ---
@@ -259,6 +263,29 @@ export const ConfigProvider = ({ children }) => {
         saveToBackend({ ...getCurrentConfig(), hiddenSchemes: newHidden });
     };
 
+    const updateSnapshot = (scheme, currentValue) => {
+        const today = new Date().toISOString().split('T')[0];
+        const currentSnap = snapshots[scheme] || { prevDate: "", prevValue: 0, currDate: "", currValue: 0 };
+
+        let newSnap = { ...currentSnap, lastUpdated: new Date().toISOString() };
+
+        if (currentSnap.currDate !== today) {
+            // New Day: Shift Current to Previous
+            newSnap.prevDate = currentSnap.currDate || today; // Fallback if first run
+            newSnap.prevValue = currentSnap.currValue;
+            newSnap.currDate = today;
+            newSnap.currValue = currentValue;
+        } else {
+            // Same Day: Update Current
+            newSnap.currValue = currentValue;
+        }
+
+        const newSnapshots = { ...snapshots, [scheme]: newSnap };
+        setSnapshots(newSnapshots);
+        // Debounce saving if possible, but for now direct save is safer for integrity
+        saveToBackend({ ...getCurrentConfig(), snapshots: newSnapshots });
+    };
+
     const setGroups = (newGroups) => {
         setSchemeGroups(newGroups);
         saveToBackend({ ...getCurrentConfig(), schemeGroups: newGroups });
@@ -271,6 +298,7 @@ export const ConfigProvider = ({ children }) => {
             nodalOfficers,
             sheetUrls,
             schemeGroups,
+            snapshots,
             loading,
             addScheme,
             updateSchemeUrl,
@@ -282,6 +310,7 @@ export const ConfigProvider = ({ children }) => {
             updateGroup,
             moveSchemeGroup,
             toggleSchemeVisibility,
+            updateSnapshot,
             setGroups
         }}>
             {children}
