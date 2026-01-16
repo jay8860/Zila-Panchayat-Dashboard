@@ -62,7 +62,7 @@ const AiSearch = () => {
         return (
             <button
                 onClick={() => setIsOpen(true)}
-                className="fixed bottom-6 right-6 h-14 w-14 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full shadow-2xl flex items-center justify-center text-white hover:scale-110 transition-transform z-50 animate-in fade-in zoom-in"
+                className="fixed bottom-8 right-8 h-14 w-14 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full shadow-2xl flex items-center justify-center text-white hover:scale-110 transition-transform z-[100] animate-in fade-in zoom-in"
                 title="Ask AI Assistant"
             >
                 <Sparkles size={24} />
@@ -71,7 +71,7 @@ const AiSearch = () => {
     }
 
     return (
-        <div className="fixed bottom-6 right-6 w-96 h-[600px] max-h-[80vh] bg-card border border-border rounded-2xl shadow-2xl flex flex-col z-50 animate-in slide-in-from-bottom-10 fade-in duration-300 overflow-hidden">
+        <div className="fixed bottom-8 right-8 w-96 h-[600px] max-h-[80vh] bg-card border border-border rounded-2xl shadow-2xl flex flex-col z-[100] animate-in slide-in-from-bottom-10 fade-in duration-300 overflow-hidden">
             {/* Header */}
             <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-4 flex justify-between items-center text-white shrink-0">
                 <div className="flex items-center gap-2">
