@@ -10,7 +10,6 @@ import {
     CheckCircle,
     AlertTriangle,
     Sun,
-    Sun,
     Moon,
     Sparkles
 } from 'lucide-react';
