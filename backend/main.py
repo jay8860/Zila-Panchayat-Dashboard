@@ -18,7 +18,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-DB_FILE = "dashboard_data.json"
+# Use ENV variable for storage path (Railway Volume)
+DATA_DIR = os.environ.get("DATA_DIR", ".")
+DB_FILE = os.path.join(DATA_DIR, "dashboard_data.json")
 
 # --- Models ---
 class Officer(BaseModel):
