@@ -10,12 +10,14 @@ import {
     CheckCircle,
     AlertTriangle,
     Sun,
-    Moon
+    Sun,
+    Moon,
+    Sparkles
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useDashboard } from '../../context/DashboardContext';
 
-const Sidebar = ({ activeTab, setActiveTab }) => {
+const Sidebar = ({ activeTab, setActiveTab, onOpenAi }) => {
     const { logout, userRole } = useAuth();
     const { syncData, syncStatus } = useDashboard();
     const { theme, toggleTheme } = useTheme();
@@ -76,6 +78,15 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
                         </button>
                     );
                 })}
+
+                {/* AI Assistant Button */}
+                <button
+                    onClick={onOpenAi}
+                    className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group text-indigo-400 hover:bg-indigo-500/10 hover:text-indigo-500 mt-4"
+                >
+                    <Sparkles size={20} />
+                    <span className="font-medium">Ask AI Assistant</span>
+                </button>
             </nav>
 
             {/* Sync Control */}

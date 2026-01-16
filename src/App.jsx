@@ -147,55 +147,58 @@ const DashboardView = ({ onOpenSettings, onOpenBriefing }) => {
 
 const AuthenticatedApp = () => {
   const { isAuthenticated, checking, userRole } = useAuth();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const AuthenticatedApp = () => {
+    const { isAuthenticated, checking, userRole } = useAuth();
+    const [activeTab, setActiveTab] = useState('dashboard');
+    const [aiOpen, setAiOpen] = useState(false);
 
-  if (checking) return null;
+    if (checking) return null;
 
-  if (!isAuthenticated) {
-    return <Login />;
-  }
-
-  const handleOpenSettings = (schemeName) => {
-    // Navigate to Admin/Settings if allowed
-    if (userRole === 'admin') {
-      setActiveTab('settings');
+    if (!isAuthenticated) {
+      return <Login />;
     }
+
+    const handleOpenSettings = (schemeName) => {
+      // Navigate to Admin/Settings if allowed
+      if (userRole === 'admin') {
+        setActiveTab('settings');
+      }
+    };
+
+    return (
+      <ConfigProvider>
+        <DashboardProvider>
+          <div className="min-h-screen bg-background text-foreground flex font-sans">
+            <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+            <main className="flex-1 ml-64 bg-background/50 relative overflow-y-auto h-screen">
+              <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:20px_20px] pointer-events-none" />
+              <ErrorBoundary>
+                {activeTab === 'dashboard' && (
+                  <DashboardView
+                    onOpenSettings={handleOpenSettings}
+                    onOpenBriefing={() => setActiveTab('action-hub')}
+                  />
+                )}
+                {activeTab === 'action-hub' && <ActionHub />}
+                {activeTab === 'settings' && userRole === 'admin' && <AdminPanel />}
+              </ErrorBoundary>
+            </main>
+          </div>
+        </DashboardProvider>
+      </ConfigProvider>
+    );
   };
 
-  return (
-    <ConfigProvider>
-      <DashboardProvider>
-        <div className="min-h-screen bg-background text-foreground flex font-sans">
-          <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-          <main className="flex-1 ml-64 bg-background/50 relative overflow-y-auto h-screen">
-            <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:20px_20px] pointer-events-none" />
-            <ErrorBoundary>
-              {activeTab === 'dashboard' && (
-                <DashboardView
-                  onOpenSettings={handleOpenSettings}
-                  onOpenBriefing={() => setActiveTab('action-hub')}
-                />
-              )}
-              {activeTab === 'action-hub' && <ActionHub />}
-              {activeTab === 'settings' && userRole === 'admin' && <AdminPanel />}
-            </ErrorBoundary>
-          </main>
-        </div>
-      </DashboardProvider>
-    </ConfigProvider>
-  );
-};
+  import { ThemeProvider } from './context/ThemeContext';
 
-import { ThemeProvider } from './context/ThemeContext';
+  function App() {
+    return (
+      <ThemeProvider>
+        <AuthProvider>
+          <AuthenticatedApp />
+        </AuthProvider>
+      </ThemeProvider>
+    );
+  }
 
-function App() {
-  return (
-    <ThemeProvider>
-      <AuthProvider>
-        <AuthenticatedApp />
-      </AuthProvider>
-    </ThemeProvider>
-  );
-}
-
-export default App;
+  export default App;
