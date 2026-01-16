@@ -30,10 +30,42 @@ export const ConfigProvider = ({ children }) => {
             const res = await fetch(`${API_URL}/config`);
             if (res.ok) {
                 const data = await res.json();
-                setSchemes(data.schemes);
-                setNodalOfficers(data.nodalOfficers);
-                setSheetUrls(data.sheetUrls);
-                setSchemeGroups(data.schemeGroups);
+
+                // --- Migration Logic: Restore from LocalStorage if Backend is Default ---
+                // If backend URLs are all empty, but LocalStorage has URLs, we assume migration is needed.
+                const localUrls = localStorage.getItem('zp_urls');
+                const hasLocalData = localUrls && Object.values(JSON.parse(localUrls)).some(url => url.length > 0);
+                const backendIsEmpty = Object.values(data.sheetUrls).every(url => url === "");
+
+                if (backendIsEmpty && hasLocalData) {
+                    console.log("Migrating LocalStorage data to Backend...");
+                    const localSchemes = JSON.parse(localStorage.getItem('zp_schemes') || '[]');
+                    const localOfficers = JSON.parse(localStorage.getItem('zp_officers') || '{}');
+                    const localGroups = JSON.parse(localStorage.getItem('zp_scheme_groups') || '[]');
+                    const parsedUrls = JSON.parse(localUrls);
+
+                    const migratedConfig = {
+                        schemes: localSchemes.length ? localSchemes : data.schemes,
+                        nodalOfficers: Object.keys(localOfficers).length ? localOfficers : data.nodalOfficers,
+                        sheetUrls: parsedUrls,
+                        schemeGroups: localGroups.length ? localGroups : data.schemeGroups
+                    };
+
+                    // Update State
+                    setSchemes(migratedConfig.schemes);
+                    setNodalOfficers(migratedConfig.nodalOfficers);
+                    setSheetUrls(migratedConfig.sheetUrls);
+                    setSchemeGroups(migratedConfig.schemeGroups);
+
+                    // Push to Backend
+                    await saveToBackend(migratedConfig);
+                } else {
+                    // Normal Load
+                    setSchemes(data.schemes);
+                    setNodalOfficers(data.nodalOfficers);
+                    setSheetUrls(data.sheetUrls);
+                    setSchemeGroups(data.schemeGroups);
+                }
             } else {
                 console.error("Failed to load config from backend");
             }
