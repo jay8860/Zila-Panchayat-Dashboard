@@ -53,7 +53,8 @@ const DashboardView = ({ onOpenSettings, onOpenBriefing }) => {
   }
 
   const { setBriefingScheme } = useDashboard();
-  const { schemeGroups: groups } = useConfig();
+  const { schemeGroups: groups, hiddenSchemes } = useConfig();
+  const { userRole } = useAuth();
 
   if (viewState.level === 'BLOCK') {
     return (
@@ -92,7 +93,15 @@ const DashboardView = ({ onOpenSettings, onOpenBriefing }) => {
     return (
       <div className="space-y-10">
         {groups.map(group => {
-          if (group.schemes.length === 0) return null;
+          // Filter schemes based on visibility
+          const visibleSchemes = group.schemes.filter(scheme => {
+            // If admin, show everything (maybe distinct style? For now simple show)
+            if (userRole === 'admin') return true;
+            // If viewer, hide if in hiddenSchemes
+            return !hiddenSchemes.includes(scheme);
+          });
+
+          if (visibleSchemes.length === 0) return null;
 
           return (
             <div key={group.id} className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -103,7 +112,7 @@ const DashboardView = ({ onOpenSettings, onOpenBriefing }) => {
                 </h3>
               )}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {group.schemes.map(scheme => (
+                {visibleSchemes.map(scheme => (
                   <SchemeCard
                     key={scheme}
                     scheme={scheme}

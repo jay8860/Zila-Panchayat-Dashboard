@@ -17,6 +17,7 @@ export const ConfigProvider = ({ children }) => {
         title: 'General Schemes',
         schemes: DEFAULT_SCHEMES
     }]);
+    const [hiddenSchemes, setHiddenSchemes] = useState([]);
 
     const [loading, setLoading] = useState(true);
 
@@ -42,10 +43,12 @@ export const ConfigProvider = ({ children }) => {
                     const localSchemes = JSON.parse(localStorage.getItem('zp_schemes') || '[]');
                     const localOfficers = JSON.parse(localStorage.getItem('zp_officers') || '{}');
                     const localGroups = JSON.parse(localStorage.getItem('zp_scheme_groups') || '[]');
+                    const localHidden = JSON.parse(localStorage.getItem('zp_hidden_schemes') || '[]'); // Future proof
                     const parsedUrls = JSON.parse(localUrls);
 
                     const migratedConfig = {
                         schemes: localSchemes.length ? localSchemes : data.schemes,
+                        hiddenSchemes: localHidden,
                         nodalOfficers: Object.keys(localOfficers).length ? localOfficers : data.nodalOfficers,
                         sheetUrls: parsedUrls,
                         schemeGroups: localGroups.length ? localGroups : data.schemeGroups
@@ -53,6 +56,7 @@ export const ConfigProvider = ({ children }) => {
 
                     // Update State
                     setSchemes(migratedConfig.schemes);
+                    setHiddenSchemes(migratedConfig.hiddenSchemes);
                     setNodalOfficers(migratedConfig.nodalOfficers);
                     setSheetUrls(migratedConfig.sheetUrls);
                     setSchemeGroups(migratedConfig.schemeGroups);
@@ -62,6 +66,7 @@ export const ConfigProvider = ({ children }) => {
                 } else {
                     // Normal Load
                     setSchemes(data.schemes);
+                    setHiddenSchemes(data.hiddenSchemes || []);
                     setNodalOfficers(data.nodalOfficers);
                     setSheetUrls(data.sheetUrls);
                     setSchemeGroups(data.schemeGroups);
@@ -92,6 +97,7 @@ export const ConfigProvider = ({ children }) => {
     // Construct current full config object
     const getCurrentConfig = () => ({
         schemes,
+        hiddenSchemes,
         nodalOfficers,
         sheetUrls,
         schemeGroups
@@ -119,6 +125,7 @@ export const ConfigProvider = ({ children }) => {
             // Sync
             saveToBackend({
                 schemes: newSchemes,
+                hiddenSchemes,
                 nodalOfficers: newOfficers,
                 sheetUrls: newUrls,
                 schemeGroups: newGroups
@@ -243,6 +250,15 @@ export const ConfigProvider = ({ children }) => {
         saveToBackend({ ...getCurrentConfig(), schemeGroups: newGroups });
     };
 
+    const toggleSchemeVisibility = (scheme) => {
+        const isHidden = hiddenSchemes.includes(scheme);
+        const newHidden = isHidden
+            ? hiddenSchemes.filter(s => s !== scheme)
+            : [...hiddenSchemes, scheme];
+        setHiddenSchemes(newHidden);
+        saveToBackend({ ...getCurrentConfig(), hiddenSchemes: newHidden });
+    };
+
     const setGroups = (newGroups) => {
         setSchemeGroups(newGroups);
         saveToBackend({ ...getCurrentConfig(), schemeGroups: newGroups });
@@ -251,6 +267,7 @@ export const ConfigProvider = ({ children }) => {
     return (
         <ConfigContext.Provider value={{
             schemes,
+            hiddenSchemes,
             nodalOfficers,
             sheetUrls,
             schemeGroups,
@@ -264,6 +281,7 @@ export const ConfigProvider = ({ children }) => {
             deleteGroup,
             updateGroup,
             moveSchemeGroup,
+            toggleSchemeVisibility,
             setGroups
         }}>
             {children}

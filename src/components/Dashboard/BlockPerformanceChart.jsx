@@ -142,18 +142,23 @@ const BlockPerformanceChart = ({ scheme, onBack, onBlockClick }) => {
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                         data={chartData}
-                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                        layout="vertical" // Horizontal bars are better for block names
+                        margin={{ top: 20, right: 30, left: 20, bottom: 60 }} // Extra bottom for labels
                     >
-                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={false} />
-                        <XAxis type="number" domain={[0, 100]} hide />
-                        <YAxis
+                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                        <XAxis
                             dataKey="name"
                             type="category"
-                            width={100}
-                            tick={{ fill: '#94a3b8', fontSize: 14 }}
+                            tick={{ fill: '#94a3b8', fontSize: 12 }}
+                            angle={-45}
+                            textAnchor="end"
+                            interval={0}
                             axisLine={false}
                             tickLine={false}
+                        />
+                        <YAxis
+                            type="number"
+                            domain={[0, 100]}
+                            hide
                         />
                         <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
                         <Bar

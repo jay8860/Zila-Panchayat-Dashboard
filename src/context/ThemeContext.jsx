@@ -8,7 +8,7 @@ export const ThemeProvider = ({ children }) => {
     const [theme, setTheme] = useState(() => {
         const stored = localStorage.getItem('zp_theme');
         if (stored) return stored;
-        return 'dark'; // Default to dark as requested
+        return 'light'; // Default to light as requested
     });
 
     useEffect(() => {

@@ -34,12 +34,14 @@ class Group(BaseModel):
 
 class DashboardConfig(BaseModel):
     schemes: List[str]
+    hiddenSchemes: List[str] = []  # Schemes hidden from normal users
     nodalOfficers: Dict[str, Officer]
     sheetUrls: Dict[str, str]
     schemeGroups: List[Group]
 
 # --- Default Data (Fallback) ---
 DEFAULT_DATA = {
+    "hiddenSchemes": [],
     "schemes": [
         "PMAY",
         "Spl - PMAY",
@@ -241,6 +243,9 @@ def load_db() -> DashboardConfig:
     try:
         with open(DB_FILE, "r") as f:
             data = json.load(f)
+            # Migration for old data
+            if "hiddenSchemes" not in data:
+                data["hiddenSchemes"] = []
             return DashboardConfig(**data)
     except Exception as e:
         print(f"Error loading DB: {e}")

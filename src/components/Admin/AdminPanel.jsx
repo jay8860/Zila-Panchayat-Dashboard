@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useConfig } from '../../context/ConfigContext';
-import { Save, User, Link as LinkIcon, Plus, Trash2, Layout, Edit3, ArrowUp, ArrowDown, Move } from 'lucide-react';
+import { Save, User, Link as LinkIcon, Plus, Trash2, Layout, Edit3, ArrowUp, ArrowDown, Move, Eye, EyeOff } from 'lucide-react';
 
 const AdminPanel = () => {
     const {
-        schemes, nodalOfficers, sheetUrls, schemeGroups,
+        schemes, nodalOfficers, sheetUrls, schemeGroups, hiddenSchemes,
         updateSchemeUrl, updateOfficer, addScheme, deleteScheme,
-        renameScheme, addGroup, deleteGroup, updateGroup, moveSchemeGroup, setGroups
+        renameScheme, addGroup, deleteGroup, updateGroup, moveSchemeGroup, toggleSchemeVisibility, setGroups
     } = useConfig();
 
     const [activeTab, setActiveTab] = useState('urls'); // urls, officers, schemes
@@ -254,7 +254,9 @@ const AdminPanel = () => {
                                                             className="bg-muted px-2 py-1 rounded text-sm w-full focus:outline-none border border-primary"
                                                         />
                                                     ) : (
-                                                        <span className="text-sm font-medium">{scheme}</span>
+                                                        <span className={`text-sm font-medium ${hiddenSchemes.includes(scheme) ? 'text-muted-foreground line-through decoration-muted-foreground/50' : ''}`}>
+                                                            {scheme}
+                                                        </span>
                                                     )}
                                                 </div>
 
@@ -284,8 +286,16 @@ const AdminPanel = () => {
                                                     </div>
 
                                                     <button
+                                                        onClick={() => toggleSchemeVisibility(scheme)}
+                                                        className={`p-1 ml-2 rounded transition-colors ${hiddenSchemes.includes(scheme) ? 'text-muted-foreground bg-muted' : 'text-emerald-400 hover:bg-emerald-400/10'}`}
+                                                        title={hiddenSchemes.includes(scheme) ? "Show Scheme" : "Hide Scheme"}
+                                                    >
+                                                        {hiddenSchemes.includes(scheme) ? <EyeOff size={14} /> : <Eye size={14} />}
+                                                    </button>
+
+                                                    <button
                                                         onClick={() => { if (window.confirm(`Delete ${scheme}?`)) deleteScheme(scheme); }}
-                                                        className="text-red-400 hover:text-red-500 ml-2"
+                                                        className="text-red-400 hover:text-red-500 ml-1"
                                                     >
                                                         <Trash2 size={14} />
                                                     </button>
