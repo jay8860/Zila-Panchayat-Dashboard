@@ -9,6 +9,7 @@ import GPTable from './components/Dashboard/GPTable';
 import ActionHub from './components/ActionHub/ActionHub';
 import AdminPanel from './components/Admin/AdminPanel';
 import Login from './components/Auth/Login';
+import AiSearch from './components/AiAssistant/AiSearch';
 import ErrorBoundary from './components/ErrorBoundary';
 
 const DashboardView = ({ onOpenSettings, onOpenBriefing }) => {

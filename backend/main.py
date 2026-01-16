@@ -39,6 +39,9 @@ class SchemeSnapshot(BaseModel):
     currValue: float = 0.0
     lastUpdated: str = "" # ISO timestamp
 
+class AskRequest(BaseModel):
+    query: str
+
 class DashboardConfig(BaseModel):
     schemes: List[str]
     hiddenSchemes: List[str] = []  # Schemes hidden from normal users
