@@ -18,22 +18,23 @@ const DashboardView = ({ onOpenSettings, onOpenBriefing }) => {
   const [viewState, setViewState] = useState({
     level: 'DISTRICT',
     scheme: null,
-    block: null
+    block: null,
+    focusedMetric: null
   });
 
   const handleSchemeClick = (scheme) => {
-    setViewState({ level: 'BLOCK', scheme, block: null });
+    setViewState({ level: 'BLOCK', scheme, block: null, focusedMetric: null });
   };
 
-  const handleBlockClick = (block) => {
-    setViewState(prev => ({ ...prev, level: 'GP', block }));
+  const handleBlockClick = (block, metric = null) => {
+    setViewState(prev => ({ ...prev, level: 'GP', block, focusedMetric: metric }));
   };
 
   const handleBack = () => {
     if (viewState.level === 'GP') {
-      setViewState(prev => ({ ...prev, level: 'BLOCK', block: null }));
+      setViewState(prev => ({ ...prev, level: 'BLOCK', block: null, focusedMetric: null }));
     } else if (viewState.level === 'BLOCK') {
-      setViewState({ level: 'DISTRICT', scheme: null, block: null });
+      setViewState({ level: 'DISTRICT', scheme: null, block: null, focusedMetric: null });
     }
   };
 
@@ -48,6 +49,7 @@ const DashboardView = ({ onOpenSettings, onOpenBriefing }) => {
       <GPTable
         scheme={viewState.scheme}
         block={viewState.block}
+        focusedMetric={viewState.focusedMetric}
         onBack={handleBack}
       />
     );

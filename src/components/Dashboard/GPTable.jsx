@@ -6,11 +6,12 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-const GPTable = ({ scheme, block, onBack }) => {
+const GPTable = ({ scheme, block, onBack, focusedMetric }) => {
     const { data } = useDashboard();
     const [searchTerm, setSearchTerm] = useState('');
     const [sortConfig, setSortConfig] = useState(null);
     const [showExportMenu, setShowExportMenu] = useState(false);
+    const tableContainerRef = React.useRef(null);
 
     const isDistrictTotal = block?.toLowerCase().includes('total');
     const displayBlockName = isDistrictTotal ? "District Report (All Blocks)" : `${block} Block`;
@@ -48,6 +49,22 @@ const GPTable = ({ scheme, block, onBack }) => {
             displayHeaders: otherKeys
         };
     }, [filteredData]);
+
+    // Auto-scroll logic
+    React.useEffect(() => {
+        if (focusedMetric && tableContainerRef.current) {
+            // Wait for render
+            setTimeout(() => {
+                // Remove special chars from metric to make valid ID
+                const safeId = focusedMetric.replace(/[^a-zA-Z0-9]/g, '');
+                const headerId = `header-${safeId}`;
+                const element = document.getElementById(headerId);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                }
+            }, 300);
+        }
+    }, [focusedMetric, filteredData]);
 
     // 3. Search & Sort Logic
     const processedData = useMemo(() => {
@@ -98,6 +115,16 @@ const GPTable = ({ scheme, block, onBack }) => {
         const lowerKey = key.toLowerCase();
         // Color columns with these keywords
         const keywords = ['%', 'percentage', 'progress', 'achievement', 'completion', 'rate'];
+
+        // Base Style
+        let style = '';
+
+        // Is this the focused column?
+        if (focusedMetric === key) {
+            style += ' ring-2 ring-primary/20 bg-primary/5 '; // Highlight border/bg
+        }
+
+        const isPercentage = keywords.some(k => lowerKey.includes(k));
         if (!keywords.some(k => lowerKey.includes(k))) return "";
 
         const num = parseFloat(value);
@@ -241,7 +268,10 @@ const GPTable = ({ scheme, block, onBack }) => {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-auto rounded-xl border border-border bg-card shadow-sm">
+            <div
+                ref={tableContainerRef}
+                className="flex-1 overflow-auto rounded-xl border border-border bg-card shadow-sm"
+            >
                 <table className="w-full text-sm text-left">
                     <thead className="bg-muted/50 uppercase text-xs font-semibold text-muted-foreground sticky top-0 backdrop-blur-sm z-10">
                         <tr>
@@ -276,7 +306,11 @@ const GPTable = ({ scheme, block, onBack }) => {
                             {displayHeaders.map(header => (
                                 <th
                                     key={header}
-                                    className="px-6 py-4 cursor-pointer hover:text-foreground transition-colors whitespace-nowrap"
+                                    id={`header-${header.replace(/[^a-zA-Z0-9]/g, '')}`}
+                                    className={clsx(
+                                        "px-6 py-4 cursor-pointer hover:text-foreground transition-colors whitespace-nowrap",
+                                        focusedMetric === header && "bg-primary/10 text-primary border-b-2 border-primary"
+                                    )}
                                     onClick={() => requestSort(header)}
                                 >
                                     <div className="flex items-center">

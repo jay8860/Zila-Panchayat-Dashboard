@@ -140,7 +140,8 @@ const BlockPerformanceChart = ({ scheme, onBack, onBlockClick }) => {
     // Handle click on bar
     const handleBarClick = (data, index) => {
         // ALWAYS drill down. GPTable handles "No Data" gracefully.
-        onBlockClick(data.name);
+        // Pass the selectedMetric to enable smart column focus in the next view
+        onBlockClick(data.name, selectedMetric);
     };
 
     // Color logic
