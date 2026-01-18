@@ -93,7 +93,7 @@ const ActionHub = () => {
                     const blockName = blockKey ? row[blockKey] : 'Unknown Block';
                     const officerName = officer?.name || 'District Nodal';
 
-                    const message = `In ${scheme}, Gram Panchayat ${gpName} of ${blockName} Block is at ${val}%. Please coordinate with ${officerName} and resolve this immediately.`;
+                    const message = `In ${scheme}, Gram Panchayat ${gpName} of ${blockName} Block is at ${val}% (${progressKey}). Please coordinate with Block Coordinators and Sachivs and resolve this immediately.`;
 
                     briefs.push({
                         id: Math.random().toString(36).substr(2, 9),
@@ -135,10 +135,10 @@ const ActionHub = () => {
 
                     const message = `*${scheme} - ${blockName} Block Report*\n` +
                         `To Block Nodal,\n` +
-                        `Overall Block Progress: *${avg}%*\n\n` +
+                        `Overall Block Progress: *${avg}% (${progressKey})*\n\n` +
                         `*Bottom 10 GPs requiring immediate attention:*\n` +
                         `${gpList}\n\n` +
-                        `Please direct AOs/Secretaries to improve coverage immediately.`;
+                        `Please direct Block Coordinators and Sachivs to improve coverage immediately.`;
 
                     briefs.push({
                         id: Math.random().toString(36).substr(2, 9),
