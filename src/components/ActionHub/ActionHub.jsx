@@ -246,9 +246,15 @@ const ActionHub = () => {
                         </div>
                         <button
                             onClick={() => {
-                                if (!selectedBlock) return alert("Please select a block first");
-                                const report = generateCEOReport({ blockName: selectedBlock, schemeGroups, data, schemes });
-                                setCeoReportText(report);
+                                try {
+                                    if (!selectedBlock) return alert("Please select a block first");
+                                    console.log("Generating report for:", selectedBlock);
+                                    const report = generateCEOReport({ blockName: selectedBlock, schemeGroups, data, schemes });
+                                    setCeoReportText(report);
+                                } catch (error) {
+                                    console.error("Report Generation Failed:", error);
+                                    alert(`Failed to generate report: ${error.message}`);
+                                }
                             }}
                             className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2.5 rounded-lg font-medium transition-colors shadow-lg shadow-indigo-500/20"
                         >

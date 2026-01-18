@@ -8,7 +8,7 @@ const DashboardContext = createContext();
 export const useDashboard = () => useContext(DashboardContext);
 
 export const DashboardProvider = ({ children }) => {
-    const { schemes, nodalOfficers, sheetUrls } = useConfig();
+    const { schemes, nodalOfficers, sheetUrls, schemeGroups } = useConfig();
     const [data, setData] = useState({});
     const [loading, setLoading] = useState(true);
     const [syncStatus, setSyncStatus] = useState({ state: 'IDLE', lastSynced: null });
@@ -188,7 +188,8 @@ export const DashboardProvider = ({ children }) => {
             getDistrictAverage,
             nodalOfficers,
             briefingScheme,
-            setBriefingScheme
+            setBriefingScheme,
+            schemeGroups // Pass through from ConfigContext
         }}>
             {children}
         </DashboardContext.Provider>
