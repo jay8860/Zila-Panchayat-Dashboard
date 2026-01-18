@@ -83,8 +83,21 @@ const GPTable = ({ scheme, block, onBack, focusedMetric }) => {
         // Sort
         if (sortConfig) {
             result.sort((a, b) => {
-                const valA = a[sortConfig.key];
-                const valB = b[sortConfig.key];
+                let valA = a[sortConfig.key];
+                let valB = b[sortConfig.key];
+
+                // Check if numeric
+                const numA = parseFloat(valA);
+                const numB = parseFloat(valB);
+
+                if (!isNaN(numA) && !isNaN(numB)) {
+                    valA = numA;
+                    valB = numB;
+                } else {
+                    // String comparison fallback
+                    valA = String(valA).toLowerCase();
+                    valB = String(valB).toLowerCase();
+                }
 
                 if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
                 if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
@@ -291,9 +304,9 @@ const GPTable = ({ scheme, block, onBack, focusedMetric }) => {
                                 </th>
                             )}
 
-                            {/* Unified GP Header */}
+                            {/* Unified GP Header (Sticky) */}
                             <th
-                                className="px-6 py-4 cursor-pointer hover:text-foreground transition-colors whitespace-nowrap"
+                                className="px-6 py-4 cursor-pointer hover:text-foreground transition-colors whitespace-nowrap sticky left-0 z-20 bg-card shadow-[4px_0_24px_-12px_rgba(0,0,0,0.5)]"
                                 onClick={() => gpKey && requestSort(gpKey)}
                             >
                                 <div className="flex items-center">
@@ -337,8 +350,8 @@ const GPTable = ({ scheme, block, onBack, focusedMetric }) => {
                                         </td>
                                     )}
 
-                                    {/* Unified GP Value */}
-                                    <td className="px-6 py-4 whitespace-nowrap font-medium text-foreground">
+                                    {/* Unified GP Value (Sticky) */}
+                                    <td className="px-6 py-4 whitespace-nowrap font-medium text-foreground sticky left-0 z-20 bg-card shadow-[4px_0_24px_-12px_rgba(0,0,0,0.5)]">
                                         {gpKey ? row[gpKey] : 'N/A'}
                                     </td>
 
