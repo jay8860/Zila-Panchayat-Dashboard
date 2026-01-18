@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useDashboard } from '../../context/DashboardContext';
-import { AlertTriangle, Copy, Check, FileText, Filter, Building2, Home } from 'lucide-react';
+import { AlertTriangle, Copy, Check, FileText, Filter, Building2, Home, BarChart2 } from 'lucide-react';
+import { generateCEOReport } from '../../utils/ceoReportGenerator';
 
 const ActionHub = () => {
-    const { schemes, data, nodalOfficers, briefingScheme, setBriefingScheme } = useDashboard();
+    const { schemes, data, nodalOfficers, briefingScheme, setBriefingScheme, schemeGroups } = useDashboard();
     const [generatedBriefs, setGeneratedBriefs] = useState([]);
     const [selectedScheme, setSelectedScheme] = useState('All');
     const [reportLevel, setReportLevel] = useState('GP'); // 'GP' | 'BLOCK'
+    const [reportMode, setReportMode] = useState('BRIEF'); // 'BRIEF' | 'CEO_REPORT'
+    const [selectedBlock, setSelectedBlock] = useState('');
+    const [ceoReportText, setCeoReportText] = useState('');
 
     // Sync with global briefing selection (from Dashboard click)
     useEffect(() => {
@@ -171,103 +175,203 @@ const ActionHub = () => {
                     </p>
                 </div>
 
-                <div className="flex flex-col md:flex-row gap-4 items-center w-full md:w-auto">
-                    {/* Level Toggle */}
-                    <div className="bg-muted p-1 rounded-lg flex">
-                        <button
-                            onClick={() => setReportLevel('GP')}
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${reportLevel === 'GP' ? 'bg-card shadow text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-                        >
-                            <Home size={16} />
-                            Gram Panchayat
-                        </button>
-                        <button
-                            onClick={() => setReportLevel('BLOCK')}
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${reportLevel === 'BLOCK' ? 'bg-card shadow text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-                        >
-                            <Building2 size={16} />
-                            Block Wise
-                        </button>
-                    </div>
-
-                    {/* Scheme Selector */}
-                    <div className="relative">
-                        <select
-                            value={selectedScheme}
-                            onChange={(e) => {
-                                setSelectedScheme(e.target.value);
-                                setBriefingScheme(e.target.value === 'All' ? null : e.target.value);
-                            }}
-                            className="bg-card border border-border rounded-lg px-4 py-3 pr-10 appearance-none outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer min-w-[200px]"
-                        >
-                            <option value="All">All Schemes</option>
-                            {schemes.map(s => <option key={s} value={s}>{s}</option>)}
-                        </select>
-                        <Filter className="absolute right-3 top-3.5 text-muted-foreground pointer-events-none" size={16} />
-                    </div>
-
-                    <button
-                        onClick={generateBriefing}
-                        className="bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium shadow-lg hover:bg-primary/90 transition-all flex items-center gap-2 whitespace-nowrap"
-                    >
-                        <AlertTriangle size={18} />
-                        Refresh Briefing
-                    </button>
-                </div>
             </header>
 
-            {generatedBriefs.length === 0 ? (
-                <div className="bg-card border border-border rounded-xl p-16 text-center">
-                    <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                        <FileText className="text-muted-foreground" size={32} />
-                    </div>
-                    <h3 className="text-lg font-medium">No Alerts Found</h3>
-                    <p className="text-muted-foreground mt-2 max-w-sm mx-auto">
-                        {reportLevel === 'GP'
-                            ? "No GPs found with <40% progress."
-                            : "No Block data available."}
-                    </p>
+            {/* Mode Toggle */}
+            <div className="flex justify-center mb-8">
+                <div className="bg-muted p-1 rounded-lg flex shadow-sm">
+                    <button
+                        onClick={() => setReportMode('BRIEF')}
+                        className={`px-6 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${reportMode === 'BRIEF' ? 'bg-white shadow text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                        <AlertTriangle size={16} />
+                        Intervention Briefs
+                    </button>
+                    <button
+                        onClick={() => setReportMode('CEO_REPORT')}
+                        className={`px-6 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${reportMode === 'CEO_REPORT' ? 'bg-white shadow text-indigo-600' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                        <BarChart2 size={16} />
+                        CEO Block Report
+                    </button>
                 </div>
-            ) : (
-                <div className="grid gap-4">
-                    {generatedBriefs.map(brief => (
-                        <div key={brief.id} className="bg-card border border-border p-5 rounded-xl flex gap-4 hover:border-primary/50 transition-colors group">
-                            <div className={`w-1 rounded-full h-auto ${brief.type === 'GP' ? 'bg-red-500' : 'bg-blue-500'}`}></div>
-                            <div className="flex-1">
-                                <div className="flex justify-between items-start mb-2">
-                                    <div className="flex gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                        <span className="bg-muted px-2 py-0.5 rounded">{brief.scheme}</span>
-                                        {brief.type === 'GP' ? (
-                                            <>
-                                                <span className="bg-muted px-2 py-0.5 rounded">{brief.block} Block</span>
-                                                <span className="bg-muted px-2 py-0.5 rounded">{brief.title}</span>
-                                            </>
-                                        ) : (
-                                            <span className="bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded">{brief.title} Block Report</span>
-                                        )}
-                                    </div>
-                                    <span className={`font-bold px-2 py-0.5 rounded text-sm ${brief.type === 'GP' ? 'text-red-500 bg-red-500/10' : 'text-blue-500 bg-blue-500/10'}`}>
-                                        {brief.value}%
-                                    </span>
-                                </div>
+            </div>
 
-                                <div className="bg-muted/30 p-4 rounded-lg font-mono text-sm text-foreground/90 whitespace-pre-wrap border border-transparent group-hover:border-border/50 transition-colors">
-                                    {brief.message}
-                                </div>
-                            </div>
+            {reportMode === 'CEO_REPORT' ? (
+                <div className="max-w-4xl mx-auto space-y-6">
+                    {/* Controls */}
+                    <div className="bg-card border border-border p-6 rounded-xl flex flex-col md:flex-row gap-4 items-end shadow-sm">
+                        <div className="flex-1 w-full">
+                            <label className="text-sm font-medium text-muted-foreground mb-1 block">Select Block</label>
+                            <select
+                                value={selectedBlock}
+                                onChange={(e) => setSelectedBlock(e.target.value)}
+                                className="w-full bg-background border border-border rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20"
+                            >
+                                <option value="">-- Choose Block --</option>
+                                {/* Dynamic Block List */}
+                                {(() => {
+                                    // Extract unique blocks from first available scheme data
+                                    // Robust approach: Check a few schemes until we find block names
+                                    const allBlocks = new Set();
+                                    schemes.forEach(s => {
+                                        const d = data[s] || [];
+                                        if (d.length > 0) {
+                                            const keys = Object.keys(d[0]);
+                                            const bKey = keys.find(k => k.toLowerCase().includes('block'));
+                                            if (bKey) {
+                                                d.forEach(r => {
+                                                    const b = r[bKey]?.trim();
+                                                    if (b && b.toLowerCase() !== 'total') allBlocks.add(b);
+                                                });
+                                            }
+                                        }
+                                    });
+                                    return Array.from(allBlocks).sort().map(b => (
+                                        <option key={b} value={b}>{b}</option>
+                                    ));
+                                })()}
+                            </select>
+                        </div>
+                        <button
+                            onClick={() => {
+                                if (!selectedBlock) return alert("Please select a block first");
+                                const report = generateCEOReport({ blockName: selectedBlock, schemeGroups, data, schemes });
+                                setCeoReportText(report);
+                            }}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2.5 rounded-lg font-medium transition-colors shadow-lg shadow-indigo-500/20"
+                        >
+                            Generate Report
+                        </button>
+                    </div>
 
-                            <div className="flex flex-col justify-center">
+                    {/* Report Output */}
+                    {ceoReportText && (
+                        <div className="bg-card border border-border rounded-xl overflow-hidden shadow-lg animate-in fade-in zoom-in-95 duration-300">
+                            <div className="bg-muted/30 p-4 border-b border-border flex justify-between items-center">
+                                <h3 className="font-semibold flex items-center gap-2">
+                                    <FileText size={18} className="text-indigo-500" />
+                                    Generated Report
+                                </h3>
                                 <button
-                                    onClick={() => copyToClipboard(brief.message, brief.id)}
-                                    className="p-3 bg-primary/10 text-primary rounded-lg hover:bg-primary hover:text-primary-foreground transition-all"
-                                    title="Copy for WhatsApp"
+                                    onClick={() => copyToClipboard(ceoReportText, 'full_report')}
+                                    className="text-xs flex items-center gap-1.5 bg-background border border-border hover:bg-muted px-3 py-1.5 rounded-md transition-colors"
                                 >
-                                    {copiedId === brief.id ? <Check size={20} /> : <Copy size={20} />}
+                                    {copiedId === 'full_report' ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+                                    {copiedId === 'full_report' ? 'Copied!' : 'Copy to Clipboard'}
                                 </button>
                             </div>
+                            <div className="p-6 bg-slate-50 dark:bg-slate-950/30">
+                                <pre className="whitespace-pre-wrap font-mono text-sm leading-relaxed text-foreground/80">
+                                    {ceoReportText}
+                                </pre>
+                            </div>
                         </div>
-                    ))}
+                    )}
                 </div>
+            ) : (
+                // EXISTING BRIEF UI WRAPPER
+                <>
+                    {/* Header Controls (Level & Scheme) only needed for Briefs */}
+                    <div className="flex flex-col md:flex-row justify-end mb-6 gap-4">
+                        {/* Level Toggle */}
+                        <div className="bg-muted p-1 rounded-lg flex">
+                            <button
+                                onClick={() => setReportLevel('GP')}
+                                className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${reportLevel === 'GP' ? 'bg-card shadow text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                            >
+                                <Home size={16} />
+                                Gram Panchayat
+                            </button>
+                            <button
+                                onClick={() => setReportLevel('BLOCK')}
+                                className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${reportLevel === 'BLOCK' ? 'bg-card shadow text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                            >
+                                <Building2 size={16} />
+                                Block Wise
+                            </button>
+                        </div>
+
+                        {/* Scheme Selector */}
+                        <div className="relative">
+                            <select
+                                value={selectedScheme}
+                                onChange={(e) => {
+                                    setSelectedScheme(e.target.value);
+                                    setBriefingScheme(e.target.value === 'All' ? null : e.target.value);
+                                }}
+                                className="bg-card border border-border rounded-lg px-4 py-2 pr-10 appearance-none outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer min-w-[200px]"
+                            >
+                                <option value="All">All Schemes</option>
+                                {schemes.map(s => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                            <Filter className="absolute right-3 top-3 text-muted-foreground pointer-events-none" size={16} />
+                        </div>
+
+                        <button
+                            onClick={generateBriefing}
+                            className="bg-primary text-primary-foreground px-6 py-2 rounded-lg font-medium shadow hover:bg-primary/90 transition-all flex items-center gap-2 whitespace-nowrap"
+                        >
+                            <AlertTriangle size={18} />
+                            Refresh Briefs
+                        </button>
+                    </div>
+
+
+                    {generatedBriefs.length === 0 ? (
+                        <div className="bg-card border border-border rounded-xl p-16 text-center">
+                            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                                <FileText className="text-muted-foreground" size={32} />
+                            </div>
+                            <h3 className="text-lg font-medium">No Alerts Found</h3>
+                            <p className="text-muted-foreground mt-2 max-w-sm mx-auto">
+                                {reportLevel === 'GP'
+                                    ? "No GPs found with <40% progress."
+                                    : "No Block data available."}
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="grid gap-4">
+                            {generatedBriefs.map(brief => (
+                                <div key={brief.id} className="bg-card border border-border p-5 rounded-xl flex gap-4 hover:border-primary/50 transition-colors group">
+                                    <div className={`w-1 rounded-full h-auto ${brief.type === 'GP' ? 'bg-red-500' : 'bg-blue-500'}`}></div>
+                                    <div className="flex-1">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div className="flex gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                                <span className="bg-muted px-2 py-0.5 rounded">{brief.scheme}</span>
+                                                {brief.type === 'GP' ? (
+                                                    <>
+                                                        <span className="bg-muted px-2 py-0.5 rounded">{brief.block} Block</span>
+                                                        <span className="bg-muted px-2 py-0.5 rounded">{brief.title}</span>
+                                                    </>
+                                                ) : (
+                                                    <span className="bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded">{brief.title} Block Report</span>
+                                                )}
+                                            </div>
+                                            <span className={`font-bold px-2 py-0.5 rounded text-sm ${brief.type === 'GP' ? 'text-red-500 bg-red-500/10' : 'text-blue-500 bg-blue-500/10'}`}>
+                                                {brief.value}%
+                                            </span>
+                                        </div>
+
+                                        <div className="bg-muted/30 p-4 rounded-lg font-mono text-sm text-foreground/90 whitespace-pre-wrap border border-transparent group-hover:border-border/50 transition-colors">
+                                            {brief.message}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col justify-center">
+                                        <button
+                                            onClick={() => copyToClipboard(brief.message, brief.id)}
+                                            className="p-3 bg-primary/10 text-primary rounded-lg hover:bg-primary hover:text-primary-foreground transition-all"
+                                            title="Copy for WhatsApp"
+                                        >
+                                            {copiedId === brief.id ? <Check size={20} /> : <Copy size={20} />}
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </>
             )}
         </div>
     );
