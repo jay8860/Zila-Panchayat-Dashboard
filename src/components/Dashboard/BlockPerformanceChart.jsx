@@ -62,6 +62,9 @@ const BlockPerformanceChart = ({ scheme, onBack, onBlockClick }) => {
             if (!block) return;
             const safeBlock = block.trim();
 
+            // Ignore explicit "Total" rows from data, as we calculate District Total manually
+            if (safeBlock.toLowerCase() === 'total') return;
+
             if (!blockMap[safeBlock]) {
                 blockMap[safeBlock] = { total: 0, count: 0 };
             }
