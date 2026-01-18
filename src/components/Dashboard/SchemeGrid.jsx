@@ -8,7 +8,7 @@ const SchemeCard = ({ scheme, onClick, onEdit, onBriefing }) => {
     const { getDistrictAverage, nodalOfficers, data } = useDashboard();
     const { snapshots, updateSnapshot } = useConfig();
 
-    const average = getDistrictAverage(scheme);
+    const { value: average, isPercentage, label } = getDistrictAverage(scheme);
     const officer = nodalOfficers[scheme] || { name: 'Unassigned', designation: 'N/A' };
 
     // --- Daily Progress Logic ---
@@ -86,12 +86,19 @@ const SchemeCard = ({ scheme, onClick, onEdit, onBriefing }) => {
     let bgGradient = "from-yellow-500/10 to-transparent";
 
     if (typeof average === 'number') {
-        if (average >= 75) {
-            statusColor = "text-emerald-500";
-            bgGradient = "from-emerald-500/10 to-transparent";
-        } else if (average < 40) {
-            statusColor = "text-red-500";
-            bgGradient = "from-red-500/10 to-transparent";
+        if (isPercentage) {
+            // Percentage Logic
+            if (average >= 75) {
+                statusColor = "text-emerald-500";
+                bgGradient = "from-emerald-500/10 to-transparent";
+            } else if (average < 40) {
+                statusColor = "text-red-500";
+                bgGradient = "from-red-500/10 to-transparent";
+            }
+        } else {
+            // Count Logic (Neutral/Info)
+            statusColor = "text-indigo-500";
+            bgGradient = "from-indigo-500/10 to-transparent";
         }
     }
 
@@ -115,9 +122,11 @@ const SchemeCard = ({ scheme, onClick, onEdit, onBriefing }) => {
                 <div className="mb-4 flex items-end justify-between">
                     <div>
                         <div className="text-3xl font-bold font-mono">
-                            {average}{typeof average === 'number' ? '%' : ''}
+                            {average && average.toLocaleString()}{isPercentage ? '%' : ''}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">District Average</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            {isPercentage ? 'District Average' : (label ? `Total ${label}` : 'Total Count')}
+                        </p>
                     </div>
 
                     {/* Daily Progress Section */}

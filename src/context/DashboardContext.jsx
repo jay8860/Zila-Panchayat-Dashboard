@@ -113,54 +113,69 @@ export const DashboardProvider = ({ children }) => {
     // Helper: District Average
     const getDistrictAverage = (schemeName) => {
         const schemeRows = data[schemeName];
-        if (!schemeRows || schemeRows.length === 0) return 0;
+        if (!schemeRows || schemeRows.length === 0) return { value: 0, isPercentage: false };
 
         const keys = Object.keys(schemeRows[0]);
         const progressKey = getProgressKey(keys);
+        const blockKey = keys.find(k => k.toLowerCase().includes('block')) || 'Block';
 
-        // 1. Precise Match: "Total" Row
-        const blockKey = keys.find(k => k.toLowerCase() === 'block');
-        if (blockKey) {
-            // Check broadly for "ToTal" in Block column
+        // 1. Precise Match: "Total" Row (Percentage)
+        if (progressKey) {
             const totalRow = schemeRows.find(r => r[blockKey] && r[blockKey].trim().toLowerCase() === 'total');
-            if (totalRow && progressKey && !isNaN(parseFloat(totalRow[progressKey]))) {
-                console.log(`[Context] Found Total Row for ${schemeName}: ${totalRow[progressKey]}%`);
-                return Math.round(parseFloat(totalRow[progressKey]));
+            if (totalRow && !isNaN(parseFloat(totalRow[progressKey]))) {
+                return { value: Math.round(parseFloat(totalRow[progressKey])), isPercentage: true };
             }
         }
 
-        // 2. Weighted Average: Sum(Done) / Sum(Target)
+        // 2. Weighted Average: Sum(Done) / Sum(Target) (Percentage)
         const { targetKey, doneKey } = getPerformanceKeys(keys);
         if (targetKey && doneKey) {
             let totalTarget = 0;
             let totalDone = 0;
             schemeRows.forEach(row => {
-                // Skip if "Total" row to avoid double counting
                 if (row[blockKey] && row[blockKey].trim().toLowerCase() === 'total') return;
-
-                const t = parseFloat(row[targetKey]) || 0;
-                const d = parseFloat(row[doneKey]) || 0;
-                totalTarget += t;
-                totalDone += d;
+                totalTarget += parseFloat(row[targetKey]) || 0;
+                totalDone += parseFloat(row[doneKey]) || 0;
             });
 
             if (totalTarget > 0) {
-                return Math.round((totalDone / totalTarget) * 100);
+                return { value: Math.round((totalDone / totalTarget) * 100), isPercentage: true };
             }
         }
 
-        // 3. Fallback: Simple Average of Percentages
-        if (!progressKey) return "N/A";
+        // 3. Simple Average of Percentages (Percentage)
+        if (progressKey) {
+            const validRows = schemeRows.filter(r => {
+                const isTotal = r[blockKey]?.toLowerCase() === 'total';
+                return !isTotal && !isNaN(parseFloat(r[progressKey]));
+            });
 
-        const validRows = schemeRows.filter(r => {
-            const isTotal = r[blockKey]?.toLowerCase() === 'total';
-            return !isTotal && !isNaN(parseFloat(r[progressKey]));
+            if (validRows.length > 0) {
+                const total = validRows.reduce((sum, row) => sum + parseFloat(row[progressKey]), 0);
+                return { value: Math.round(total / validRows.length), isPercentage: true };
+            }
+        }
+
+        // 4. FALLBACK: Sum of Count Metric (Count)
+        // If no percentage found, look for "Count" metrics to sum up.
+        // Priorities: Done > Target > Beneficiaries > Works > Amount
+        const countKey = doneKey || targetKey || keys.find(k => {
+            const lower = k.toLowerCase();
+            return lower.includes('beneficiar') || lower.includes('works') || lower.includes('amount') || lower.includes('cost') || lower.includes('total');
         });
 
-        if (validRows.length === 0) return 0;
+        if (countKey) {
+            let totalSum = 0;
+            schemeRows.forEach(row => {
+                if (row[blockKey] && row[blockKey].trim().toLowerCase() === 'total') return;
+                const val = parseFloat(row[countKey]);
+                if (!isNaN(val)) totalSum += val;
+            });
+            // Heuristic: If sum is huge, it's definitely not a percentage.
+            return { value: Math.round(totalSum), isPercentage: false, label: countKey };
+        }
 
-        const total = validRows.reduce((sum, row) => sum + parseFloat(row[progressKey]), 0);
-        return Math.round(total / validRows.length);
+        return { value: "N/A", isPercentage: false };
     };
 
     return (
