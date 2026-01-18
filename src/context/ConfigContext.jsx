@@ -263,26 +263,32 @@ export const ConfigProvider = ({ children }) => {
         saveToBackend({ ...getCurrentConfig(), hiddenSchemes: newHidden });
     };
 
-    const updateSnapshot = (scheme, currentValue) => {
+    const updateSnapshot = (scheme, currentValue, dataHash = "") => {
         const today = new Date().toISOString().split('T')[0];
-        const currentSnap = snapshots[scheme] || { prevDate: "", prevValue: 0, currDate: "", currValue: 0, lastUpdated: "" };
+        const currentSnap = snapshots[scheme] || { prevDate: "", prevValue: 0, currDate: "", currValue: 0, lastUpdated: "", dataHash: "" };
 
         let newSnap = { ...currentSnap };
         let hasChanged = false;
 
+        // 1. Day Change Logic
         if (currentSnap.currDate !== today) {
-            // New Day: Shift Current to Previous
             newSnap.prevDate = currentSnap.currDate || today;
             newSnap.prevValue = currentSnap.currValue;
             newSnap.currDate = today;
             newSnap.currValue = currentValue;
-            newSnap.lastUpdated = new Date().toISOString(); // Always update timestamp on new day entry
+            newSnap.dataHash = dataHash; // New day, take current hash
+            newSnap.lastUpdated = new Date().toISOString();
             hasChanged = true;
         } else {
-            // Same Day: Update Current ONLY if value differs
-            if (currentSnap.currValue !== currentValue) {
+            // 2. Same Day Update Logic
+            // Update if Value OR Hash changed
+            const valueChanged = currentSnap.currValue !== currentValue;
+            const hashChanged = dataHash && currentSnap.dataHash !== dataHash;
+
+            if (valueChanged || hashChanged) {
                 newSnap.currValue = currentValue;
-                newSnap.lastUpdated = new Date().toISOString(); // Update timestamp on value change
+                if (dataHash) newSnap.dataHash = dataHash;
+                newSnap.lastUpdated = new Date().toISOString();
                 hasChanged = true;
             }
         }

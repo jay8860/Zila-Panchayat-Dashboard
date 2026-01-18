@@ -67,12 +67,18 @@ const SchemeCard = ({ scheme, onClick, onEdit, onBriefing }) => {
         };
     }, [data, scheme, snapshots]);
 
+    const schemeDataHash = JSON.stringify(data[scheme] || []);
+
     // --- Sync Logic ---
     useEffect(() => {
-        if (headlineValue !== undefined && headlineValue !== 0) {
-            updateSnapshot(scheme, headlineValue);
+        // Trigger update if we have data (even empty array is technically data, but let's require length > 0 for valid hash if needed, 
+        // though empty sheet might be a valid state. Let's stick to existing condition + hash check)
+
+        // We allow update even if value is 0, to capture "Zero Progress" confirmation via Hash change.
+        if (schemeDataHash !== '[]') {
+            updateSnapshot(scheme, headlineValue || 0, schemeDataHash);
         }
-    }, [headlineValue, scheme, updateSnapshot]);
+    }, [headlineValue, schemeDataHash, scheme, updateSnapshot]);
 
 
     // Determine color based on average (if it's a number)
@@ -161,22 +167,28 @@ const SchemeCard = ({ scheme, onClick, onEdit, onBriefing }) => {
                     </div>
                 </div>
 
-                {/* Stale Warning Footer or Last Updated */}
-                {isStale ? (
-                    <div className="mt-3 pt-2 border-t border-red-500/20 flex items-center space-x-2 text-red-400 animate-pulse">
-                        <Clock size={12} />
-                        <span className="text-[10px] font-medium">No update by 11:00 AM</span>
-                    </div>
-                ) : headlineLabel && lastUpdated && (
-                    <div className="mt-3 pt-2 border-t border-border/50 flex items-center space-x-2 text-muted-foreground">
-                        <Clock size={12} />
-                        <span className="text-[10px] font-medium">
-                            Updated: {new Date(lastUpdated).toLocaleDateString() === new Date().toLocaleDateString()
-                                ? `Today, ${new Date(lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                                : new Date(lastUpdated).toLocaleDateString()}
-                        </span>
-                    </div>
-                )}
+                {/* Footer Info */}
+                <div className="mt-3 pt-2 border-t border-border/50 flex flex-col gap-1">
+                    {/* Always show Last Updated if available */}
+                    {headlineLabel && lastUpdated && (
+                        <div className="flex items-center space-x-2 text-muted-foreground">
+                            <Clock size={12} />
+                            <span className="text-[10px] font-medium">
+                                Updated: {new Date(lastUpdated).toLocaleDateString() === new Date().toLocaleDateString()
+                                    ? `Today, ${new Date(lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                                    : new Date(lastUpdated).toLocaleDateString()}
+                            </span>
+                        </div>
+                    )}
+
+                    {/* Show Stale Warning separately if needed */}
+                    {isStale && (
+                        <div className="flex items-center space-x-2 text-red-400 animate-pulse">
+                            <AlertCircle size={12} />
+                            <span className="text-[10px] font-medium">No progress by 11:00 AM</span>
+                        </div>
+                    )}
+                </div>
             </div>
         </div >
     );
