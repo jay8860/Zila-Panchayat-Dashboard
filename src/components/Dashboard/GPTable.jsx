@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, Search, ArrowUpDown, ArrowUp, ArrowDown, Download, FileSpreadsheet, FileText } from 'lucide-react';
+import { ArrowLeft, Search, ArrowUpDown, ArrowUp, ArrowDown, Download, FileSpreadsheet, FileText, Pin, PinOff } from 'lucide-react';
 import { useDashboard } from '../../context/DashboardContext';
 import clsx from 'clsx';
 import * as XLSX from 'xlsx';
@@ -11,6 +11,7 @@ const GPTable = ({ scheme, block, onBack, focusedMetric }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [sortConfig, setSortConfig] = useState(null);
     const [showExportMenu, setShowExportMenu] = useState(false);
+    const [pinnedColumns, setPinnedColumns] = useState([]);
     const tableContainerRef = React.useRef(null);
 
     const isDistrictTotal = block?.toLowerCase().includes('total');
@@ -48,7 +49,24 @@ const GPTable = ({ scheme, block, onBack, focusedMetric }) => {
             gpKey: foundGpKey,
             displayHeaders: otherKeys
         };
+        return {
+            gpKey: foundGpKey,
+            displayHeaders: otherKeys
+        };
     }, [filteredData]);
+
+    const togglePin = (col) => {
+        if (pinnedColumns.includes(col)) {
+            setPinnedColumns(prev => prev.filter(c => c !== col));
+        } else {
+            setPinnedColumns(prev => [...prev, col]);
+        }
+    };
+
+    const orderedHeaders = useMemo(() => {
+        const unpinned = displayHeaders.filter(h => !pinnedColumns.includes(h));
+        return [...pinnedColumns, ...unpinned];
+    }, [displayHeaders, pinnedColumns]);
 
     // Auto-scroll logic
     React.useEffect(() => {
@@ -306,32 +324,58 @@ const GPTable = ({ scheme, block, onBack, focusedMetric }) => {
 
                             {/* Unified GP Header (Sticky) */}
                             <th
-                                className="px-6 py-4 cursor-pointer hover:text-foreground transition-colors whitespace-nowrap sticky left-0 z-20 bg-card shadow-[4px_0_24px_-12px_rgba(0,0,0,0.5)]"
+                                className="px-6 py-4 cursor-pointer hover:text-foreground transition-colors whitespace-nowrap sticky left-0 z-30 bg-card shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] border-r border-border"
+                                style={{ minWidth: '220px', width: '220px' }}
                                 onClick={() => gpKey && requestSort(gpKey)}
                             >
-                                <div className="flex items-center">
-                                    Gram Panchayat
-                                    {gpKey && getSortIcon(gpKey)}
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center">
+                                        Gram Panchayat
+                                        {gpKey && getSortIcon(gpKey)}
+                                    </div>
                                 </div>
                             </th>
 
                             {/* Dynamic Headers */}
-                            {displayHeaders.map(header => (
-                                <th
-                                    key={header}
-                                    id={`header-${header.replace(/[^a-zA-Z0-9]/g, '')}`}
-                                    className={clsx(
-                                        "px-6 py-4 cursor-pointer hover:text-foreground transition-colors whitespace-nowrap",
-                                        focusedMetric === header && "bg-primary/10 text-primary border-b-2 border-primary"
-                                    )}
-                                    onClick={() => requestSort(header)}
-                                >
-                                    <div className="flex items-center">
-                                        {header}
-                                        {getSortIcon(header)}
-                                    </div>
-                                </th>
-                            ))}
+                            {orderedHeaders.map((header, idx) => {
+                                const isPinned = pinnedColumns.includes(header);
+                                const pinnedIndex = pinnedColumns.indexOf(header);
+                                // GP Width (220) + (Index * 150)
+                                const stickyLeft = isPinned ? 220 + (pinnedIndex * 160) : undefined;
+
+                                return (
+                                    <th
+                                        key={header}
+                                        id={`header-${header.replace(/[^a-zA-Z0-9]/g, '')}`}
+                                        className={clsx(
+                                            "px-6 py-4 transition-colors whitespace-nowrap group bg-card",
+                                            focusedMetric === header && !isPinned && "bg-primary/10 text-primary border-b-2 border-primary",
+                                            isPinned ? "sticky z-20 border-r border-border shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]" : "hover:text-foreground"
+                                        )}
+                                        style={isPinned ? { left: `${stickyLeft}px`, minWidth: '160px', width: '160px' } : {}}
+                                        onClick={() => requestSort(header)}
+                                    >
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="flex items-center cursor-pointer">
+                                                {header}
+                                                {getSortIcon(header)}
+                                            </div>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    togglePin(header);
+                                                }}
+                                                className={clsx(
+                                                    "opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-muted",
+                                                    isPinned && "opacity-100 text-primary"
+                                                )}
+                                            >
+                                                {isPinned ? <PinOff size={14} /> : <Pin size={14} />}
+                                            </button>
+                                        </div>
+                                    </th>
+                                );
+                            })}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
@@ -351,22 +395,35 @@ const GPTable = ({ scheme, block, onBack, focusedMetric }) => {
                                     )}
 
                                     {/* Unified GP Value (Sticky) */}
-                                    <td className="px-6 py-4 whitespace-nowrap font-medium text-foreground sticky left-0 z-20 bg-card shadow-[4px_0_24px_-12px_rgba(0,0,0,0.5)]">
-                                        {gpKey ? row[gpKey] : 'N/A'}
+                                    <td
+                                        className="px-6 py-4 whitespace-nowrap font-medium text-foreground sticky left-0 z-30 bg-card shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] border-r border-border"
+                                        style={{ minWidth: '220px', maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                                    >
+                                        <div className="truncate" title={gpKey ? row[gpKey] : 'N/A'}>
+                                            {gpKey ? row[gpKey] : 'N/A'}
+                                        </div>
                                     </td>
 
                                     {/* Dynamic Keys */}
-                                    {displayHeaders.map(header => (
-                                        <td
-                                            key={`${idx}-${header}`}
-                                            className={clsx(
-                                                "px-6 py-4 whitespace-nowrap",
-                                                getCellStyle(header, row[header])
-                                            )}
-                                        >
-                                            {row[header]}
-                                        </td>
-                                    ))}
+                                    {orderedHeaders.map(header => {
+                                        const isPinned = pinnedColumns.includes(header);
+                                        const pinnedIndex = pinnedColumns.indexOf(header);
+                                        const stickyLeft = isPinned ? 220 + (pinnedIndex * 160) : undefined;
+
+                                        return (
+                                            <td
+                                                key={`${idx}-${header}`}
+                                                className={clsx(
+                                                    "px-6 py-4 whitespace-nowrap bg-card",
+                                                    getCellStyle(header, row[header]),
+                                                    isPinned && "sticky z-20 border-r border-border shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]"
+                                                )}
+                                                style={isPinned ? { left: `${stickyLeft}px`, minWidth: '160px', width: '160px' } : {}}
+                                            >
+                                                {row[header]}
+                                            </td>
+                                        );
+                                    })}
                                 </tr>
                             ))
                         ) : (
