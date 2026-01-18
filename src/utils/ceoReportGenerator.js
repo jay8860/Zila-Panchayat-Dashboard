@@ -15,12 +15,33 @@ const findKey = (keys, keywords) => {
     return keys.find(k => keywords.some(kw => k.toLowerCase().includes(kw.toLowerCase())));
 };
 
+// Helper: Normalize Block Names
+// Maps Hindi/Case variations to Canonical English Names
+export const normalizeBlockName = (name) => {
+    if (!name) return "";
+    const lower = name.trim().toLowerCase();
+
+    // Dantewada
+    if (lower.includes('dantewada') || lower.includes('दंतेवाड़ा') || lower.includes('dantewada')) return 'Dantewada';
+
+    // Geedam
+    if (lower.includes('geedam') || lower.includes('gidam') || lower.includes('गीदम')) return 'Geedam';
+
+    // Katekalyan
+    if (lower.includes('katekalyan') || lower.includes('katikalyan') || lower.includes('कटेकल्याण')) return 'Katekalyan';
+
+    // Kuwakonda
+    if (lower.includes('kuwakonda') || lower.includes('kuakonda') || lower.includes('kuakonta') || lower.includes('कुआकोन्डा')) return 'Kuwakonda';
+
+    return name.trim(); // Return original if no match (fallback)
+};
+
 export const generateCEOReport = ({ blockName, schemeGroups, data, schemes }) => {
     let reportChunks = [];
-    const blockUpper = blockName.toUpperCase();
+    const targetedBlock = normalizeBlockName(blockName);
 
     // Header
-    reportChunks.push(`*🚨 CEO BLOCK PROGRESS REPORT: ${blockUpper}*`);
+    reportChunks.push(`*🚨 CEO BLOCK PROGRESS REPORT: ${targetedBlock.toUpperCase()}*`);
     reportChunks.push(`_generated on ${new Date().toLocaleDateString()}_`);
     reportChunks.push("--------------------------------------------------");
 
@@ -32,7 +53,8 @@ export const generateCEOReport = ({ blockName, schemeGroups, data, schemes }) =>
 
         if (activeSchemesInGroup.length === 0) return;
 
-        reportChunks.push(`\n*📂 GROUP: ${group.title.toUpperCase()}*`);
+        let groupChunk = [`\n*📂 GROUP: ${group.title.toUpperCase()}*`];
+        let hasDataInGroup = false;
 
         activeSchemesInGroup.forEach(scheme => {
             const schemeData = data[scheme] || [];
@@ -58,17 +80,20 @@ export const generateCEOReport = ({ blockName, schemeGroups, data, schemes }) =>
             const currentBlockGPs = [];
 
             schemeData.forEach(row => {
-                const bName = row[blockKey]?.trim();
-                if (!bName || bName.toLowerCase() === 'total') return;
+                const rawBName = row[blockKey]?.trim();
+                // Skip invalid rows or total rows
+                if (!rawBName || rawBName.toLowerCase() === 'total' || rawBName.toLowerCase().includes('district') || rawBName.includes('योग')) return;
+
+                const normBName = normalizeBlockName(rawBName);
 
                 // Benchmarking Data
-                if (!blockMap[bName]) blockMap[bName] = { sum: 0, count: 0, rows: [] };
+                if (!blockMap[normBName]) blockMap[normBName] = { sum: 0, count: 0 };
                 const val = cleanValue(row[percentageKey]);
-                blockMap[bName].sum += val;
-                blockMap[bName].count += 1;
+                blockMap[normBName].sum += val;
+                blockMap[normBName].count += 1;
 
-                // Current Block Data
-                if (bName.toLowerCase() === blockName.toLowerCase()) {
+                // Current Block Data (Using Normalized Check)
+                if (normBName === targetedBlock) {
                     currentBlockGPs.push({
                         name: row[gpKey] || 'Unknown GP',
                         val: val,
@@ -77,6 +102,10 @@ export const generateCEOReport = ({ blockName, schemeGroups, data, schemes }) =>
                     });
                 }
             });
+
+            // Skip scheme if selected block has no data (unless we want to show it as missing)
+            if (currentBlockGPs.length === 0) return;
+            hasDataInGroup = true;
 
             // 3. Analyze Benchmarks
             let maxAvg = -1;
@@ -89,7 +118,7 @@ export const generateCEOReport = ({ blockName, schemeGroups, data, schemes }) =>
                     maxAvg = avg;
                     topBlock = bName;
                 }
-                if (bName.toLowerCase() === blockName.toLowerCase()) {
+                if (bName === targetedBlock) {
                     currentBlockAvg = avg;
                 }
             });
@@ -103,27 +132,37 @@ export const generateCEOReport = ({ blockName, schemeGroups, data, schemes }) =>
             const statusEmoji = gap > 20 ? '🔴' : (gap > 10 ? '🟠' : '🟢');
 
             // 5. Construct Section
-            reportChunks.push(`\n*📌 Scheme: ${scheme}*`);
-            reportChunks.push(`${statusEmoji} Your Avg: *${currentBlockAvg}%* | Top Block (${topBlock}): *${maxAvg}%*`);
-            reportChunks.push(`📉 Gap: -${gap}% from Top`);
+            groupChunk.push(`\n*📌 Scheme: ${scheme}*`);
+            groupChunk.push(`${statusEmoji} Your Avg: *${currentBlockAvg}%* | Top Block (${topBlock}): *${maxAvg}%*`);
+
+            if (currentBlockAvg < maxAvg) {
+                groupChunk.push(`📉 Gap: -${gap}% from Top`);
+            } else {
+                groupChunk.push(`🏆 You are the Top Performer!`);
+            }
 
             if (bottom10.length > 0) {
-                reportChunks.push(`\n_⚠️ Weakest Links (Bottom 10 GPs):_`);
+                groupChunk.push(`_⚠️ Weakest Links (Bottom 10 GPs):_`);
                 bottom10.forEach((gp, idx) => {
                     let details = `(${gp.val}%)`;
                     if (gp.target !== '-' && gp.done !== '-') {
                         details = `(${gp.val}% | T:${fmt(gp.target)}/D:${fmt(gp.done)})`;
                     }
-                    reportChunks.push(`${idx + 1}. ${gp.name} ${details}`);
+                    groupChunk.push(`${idx + 1}. ${gp.name} ${details}`);
                 });
-            } else {
-                reportChunks.push(`_No data available for GPs in this block_`);
             }
-            reportChunks.push(`\n`);
         });
+
+        if (hasDataInGroup) {
+            reportChunks = [...reportChunks, ...groupChunk];
+        }
     });
 
-    reportChunks.push("--------------------------------------------------");
+    if (reportChunks.length <= 3) {
+        return "No data found for this block across active schemes.\nPlease check if the block name matches the data sheets.";
+    }
+
+    reportChunks.push("\n--------------------------------------------------");
     reportChunks.push("Action Required: Review these low performing GPs and initiate review meetings.");
 
     return reportChunks.join('\n');

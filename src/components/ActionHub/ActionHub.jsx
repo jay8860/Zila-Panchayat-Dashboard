@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDashboard } from '../../context/DashboardContext';
 import { AlertTriangle, Copy, Check, FileText, Filter, Building2, Home, BarChart2 } from 'lucide-react';
-import { generateCEOReport } from '../../utils/ceoReportGenerator';
+import { generateCEOReport, normalizeBlockName } from '../../utils/ceoReportGenerator';
 
 const ActionHub = () => {
     const { schemes, data, nodalOfficers, briefingScheme, setBriefingScheme, schemeGroups } = useDashboard();
@@ -209,11 +209,9 @@ const ActionHub = () => {
                                 className="w-full bg-background border border-border rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20"
                             >
                                 <option value="">-- Choose Block --</option>
-                                {/* Dynamic Block List */}
+                                {/* Normalized Block List */}
                                 {(() => {
-                                    // Extract unique blocks from first available scheme data
-                                    // Robust approach: Check a few schemes until we find block names
-                                    const allBlocks = new Set();
+                                    const uniqueBlocks = new Set();
                                     schemes.forEach(s => {
                                         const d = data[s] || [];
                                         if (d.length > 0) {
@@ -222,12 +220,25 @@ const ActionHub = () => {
                                             if (bKey) {
                                                 d.forEach(r => {
                                                     const b = r[bKey]?.trim();
-                                                    if (b && b.toLowerCase() !== 'total') allBlocks.add(b);
+                                                    // Normalize & Filter
+                                                    // Only add if it maps to a known block
+                                                    const normalized = normalizeBlockName(b);
+                                                    if (normalized && normalized !== b && normalized.length > 2) {
+                                                        // Ensure we only add valid normalized names
+                                                        uniqueBlocks.add(normalized);
+                                                    } else if (normalized && ['Dantewada', 'Geedam', 'Katekalyan', 'Kuwakonda'].includes(normalized)) {
+                                                        uniqueBlocks.add(normalized);
+                                                    }
                                                 });
                                             }
                                         }
                                     });
-                                    return Array.from(allBlocks).sort().map(b => (
+                                    // Fallback if data scanning fails or returns nothing: Show standard 4
+                                    if (uniqueBlocks.size === 0) {
+                                        ['Dantewada', 'Geedam', 'Katekalyan', 'Kuwakonda'].forEach(b => uniqueBlocks.add(b));
+                                    }
+
+                                    return Array.from(uniqueBlocks).sort().map(b => (
                                         <option key={b} value={b}>{b}</option>
                                     ));
                                 })()}
