@@ -133,7 +133,9 @@ export const generateCEOReport = ({ blockName, schemeGroups, data, schemes }) =>
 
             // 5. Construct Section
             groupChunk.push(`\n*📌 Scheme: ${scheme}*`);
-            groupChunk.push(`${statusEmoji} Your Avg: *${currentBlockAvg}%* | Top Block (${topBlock}): *${maxAvg}%*`);
+            // Explicitly mention what the percentage is
+            groupChunk.push(`${statusEmoji} Your Avg *(${percentageKey})*: *${currentBlockAvg}%*`);
+            groupChunk.push(`| Top Block (${topBlock}): *${maxAvg}%*`);
 
             if (currentBlockAvg < maxAvg) {
                 groupChunk.push(`📉 Gap: -${gap}% from Top`);
@@ -142,15 +144,19 @@ export const generateCEOReport = ({ blockName, schemeGroups, data, schemes }) =>
             }
 
             if (bottom10.length > 0) {
-                groupChunk.push(`_⚠️ Weakest Links (Bottom 10 GPs):_`);
+                groupChunk.push(`\n_⚠️ Weakest Links (Bottom 10 GPs):_`);
                 bottom10.forEach((gp, idx) => {
                     let details = `(${gp.val}%)`;
                     if (gp.target !== '-' && gp.done !== '-') {
-                        details = `(${gp.val}% | T:${fmt(gp.target)}/D:${fmt(gp.done)})`;
+                        // Use explicit "Target" and "Done" labels
+                        details = `(${gp.val}% | Target: ${fmt(gp.target)} / Done: ${fmt(gp.done)})`;
                     }
                     groupChunk.push(`${idx + 1}. ${gp.name} ${details}`);
                 });
+            } else {
+                groupChunk.push(`_No data available for GPs in this block_`);
             }
+            groupChunk.push(`\n`);
         });
 
         if (hasDataInGroup) {
@@ -162,7 +168,7 @@ export const generateCEOReport = ({ blockName, schemeGroups, data, schemes }) =>
         return "No data found for this block across active schemes.\nPlease check if the block name matches the data sheets.";
     }
 
-    reportChunks.push("\n--------------------------------------------------");
+    reportChunks.push("--------------------------------------------------");
     reportChunks.push("Action Required: Review these low performing GPs and initiate review meetings.");
 
     return reportChunks.join('\n');
