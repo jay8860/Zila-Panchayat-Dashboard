@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useConfig } from '../../context/ConfigContext';
-import { Save, User, Link as LinkIcon, Plus, Trash2, Layout, Edit3, ArrowUp, ArrowDown, Move, Eye, EyeOff } from 'lucide-react';
+import { Save, User, Link as LinkIcon, Plus, Trash2, Layout, Edit3, ArrowUp, ArrowDown, Move, Eye, EyeOff, Clipboard, Activity } from 'lucide-react';
 
 const AdminPanel = () => {
     const {
-        schemes, nodalOfficers, sheetUrls, schemeGroups, hiddenSchemes,
+        schemes, nodalOfficers, sheetUrls, schemeGroups, hiddenSchemes, snapshots,
         updateSchemeUrl, updateOfficer, addScheme, deleteScheme,
         renameScheme, addGroup, deleteGroup, updateGroup, moveSchemeGroup, toggleSchemeVisibility, setGroups
     } = useConfig();
@@ -112,6 +112,13 @@ const AdminPanel = () => {
                 >
                     <Layout size={18} />
                     <span>Layout & Schemes</span>
+                </button>
+                <button
+                    onClick={() => setActiveTab('logs')}
+                    className={`flex items-center space-x-2 px-4 py-2 border-b-2 transition-colors ${activeTab === 'logs' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+                >
+                    <Activity size={18} />
+                    <span>Analytics & Logs</span>
                 </button>
             </div>
 
@@ -305,6 +312,59 @@ const AdminPanel = () => {
                                     </div>
                                 </div>
                             ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Logs & Analytics */}
+            {activeTab === 'logs' && (
+                <div className="space-y-6">
+                    <div className="bg-card border border-border p-6 rounded-xl shadow-sm">
+                        <h3 className="font-semibold text-lg mb-4 text-purple-400">Data Update Status Report</h3>
+                        <p className="text-sm text-muted-foreground mb-6">
+                            Generate a formatted message to share with staff, listing which schemes have been updated today and which are pending.
+                        </p>
+
+                        <div className="bg-muted/50 p-4 rounded-lg font-mono text-xs whitespace-pre-wrap text-foreground border border-border">
+                            {(() => {
+                                const today = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+                                const now = new Date();
+                                const cutoff = new Date();
+                                cutoff.setHours(10, 30, 0, 0); // 10:30 AM Target
+
+                                let updatedList = [];
+                                let pendingList = [];
+
+                                schemes.forEach(scheme => {
+                                    const snap = snapshots[scheme];
+                                    if (snap?.lastUpdated && new Date(snap.lastUpdated).toLocaleDateString() === new Date().toLocaleDateString()) {
+                                        updatedList.push({
+                                            name: scheme,
+                                            time: new Date(snap.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                        });
+                                    } else {
+                                        pendingList.push({
+                                            name: scheme,
+                                            last: snap?.lastUpdated ? new Date(snap.lastUpdated).toLocaleDateString() : 'Never'
+                                        });
+                                    }
+                                });
+
+                                const reportText = `📊 *Data Update Report - ${today}*\nTarget: 10:30 AM\n\n✅ *UPDATED TODAY:*\n${updatedList.length ? updatedList.map(s => `• ${s.name} (${s.time})`).join('\n') : 'No updates yet.'}\n\n⚠️ *PENDING / OLD DATA:*\n${pendingList.length ? pendingList.map(s => `• ${s.name} (Last: ${s.last})`).join('\n') : 'All Updated!'}`;
+
+                                return (
+                                    <>
+                                        <div>{reportText}</div>
+                                        <button
+                                            onClick={() => navigator.clipboard.writeText(reportText)}
+                                            className="mt-4 flex items-center space-x-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm hover:bg-primary/90 transition-colors"
+                                        >
+                                            <Clipboard size={16} />
+                                            <span>Copy to Clipboard</span>
+                                        </button>
+                                    </>
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>

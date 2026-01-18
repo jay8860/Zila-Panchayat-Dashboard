@@ -265,25 +265,33 @@ export const ConfigProvider = ({ children }) => {
 
     const updateSnapshot = (scheme, currentValue) => {
         const today = new Date().toISOString().split('T')[0];
-        const currentSnap = snapshots[scheme] || { prevDate: "", prevValue: 0, currDate: "", currValue: 0 };
+        const currentSnap = snapshots[scheme] || { prevDate: "", prevValue: 0, currDate: "", currValue: 0, lastUpdated: "" };
 
-        let newSnap = { ...currentSnap, lastUpdated: new Date().toISOString() };
+        let newSnap = { ...currentSnap };
+        let hasChanged = false;
 
         if (currentSnap.currDate !== today) {
             // New Day: Shift Current to Previous
-            newSnap.prevDate = currentSnap.currDate || today; // Fallback if first run
+            newSnap.prevDate = currentSnap.currDate || today;
             newSnap.prevValue = currentSnap.currValue;
             newSnap.currDate = today;
             newSnap.currValue = currentValue;
+            newSnap.lastUpdated = new Date().toISOString(); // Always update timestamp on new day entry
+            hasChanged = true;
         } else {
-            // Same Day: Update Current
-            newSnap.currValue = currentValue;
+            // Same Day: Update Current ONLY if value differs
+            if (currentSnap.currValue !== currentValue) {
+                newSnap.currValue = currentValue;
+                newSnap.lastUpdated = new Date().toISOString(); // Update timestamp on value change
+                hasChanged = true;
+            }
         }
 
-        const newSnapshots = { ...snapshots, [scheme]: newSnap };
-        setSnapshots(newSnapshots);
-        // Debounce saving if possible, but for now direct save is safer for integrity
-        saveToBackend({ ...getCurrentConfig(), snapshots: newSnapshots });
+        if (hasChanged) {
+            const newSnapshots = { ...snapshots, [scheme]: newSnap };
+            setSnapshots(newSnapshots);
+            saveToBackend({ ...getCurrentConfig(), snapshots: newSnapshots });
+        }
     };
 
     const setGroups = (newGroups) => {

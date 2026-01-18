@@ -12,7 +12,7 @@ const SchemeCard = ({ scheme, onClick, onEdit, onBriefing }) => {
     const officer = nodalOfficers[scheme] || { name: 'Unassigned', designation: 'N/A' };
 
     // --- Daily Progress Logic ---
-    const { headlineValue, headlineLabel, progressDiff, isStale } = useMemo(() => {
+    const { headlineValue, headlineLabel, progressDiff, isStale, lastUpdated } = useMemo(() => {
         const schemeData = data[scheme] || [];
         if (schemeData.length === 0) return {};
 
@@ -62,7 +62,8 @@ const SchemeCard = ({ scheme, onClick, onEdit, onBriefing }) => {
             headlineValue: val,
             headlineLabel: headlineKey ? headlineKey.replace('$', '').trim() : null,
             progressDiff: diff,
-            isStale: stale
+            isStale: stale,
+            lastUpdated: snapshots[scheme]?.lastUpdated
         };
     }, [data, scheme, snapshots]);
 
@@ -160,11 +161,20 @@ const SchemeCard = ({ scheme, onClick, onEdit, onBriefing }) => {
                     </div>
                 </div>
 
-                {/* Stale Warning Footer */}
-                {isStale && (
+                {/* Stale Warning Footer or Last Updated */}
+                {isStale ? (
                     <div className="mt-3 pt-2 border-t border-red-500/20 flex items-center space-x-2 text-red-400 animate-pulse">
                         <Clock size={12} />
                         <span className="text-[10px] font-medium">No update by 11:00 AM</span>
+                    </div>
+                ) : headlineLabel && lastUpdated && (
+                    <div className="mt-3 pt-2 border-t border-border/50 flex items-center space-x-2 text-muted-foreground">
+                        <Clock size={12} />
+                        <span className="text-[10px] font-medium">
+                            Updated: {new Date(lastUpdated).toLocaleDateString() === new Date().toLocaleDateString()
+                                ? `Today, ${new Date(lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                                : new Date(lastUpdated).toLocaleDateString()}
+                        </span>
                     </div>
                 )}
             </div>
