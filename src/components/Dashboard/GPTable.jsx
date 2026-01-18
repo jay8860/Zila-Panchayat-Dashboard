@@ -170,6 +170,9 @@ const GPTable = ({ scheme, block, onBack, focusedMetric }) => {
 
     // --- Export Logic ---
     const getExportData = () => {
+        // Use pinned columns if any, otherwise all columns
+        const headersToExport = pinnedColumns.length > 0 ? pinnedColumns : displayHeaders;
+
         return processedData.map((row, idx) => {
             const exportRow = {
                 'S No': idx + 1,
@@ -181,7 +184,7 @@ const GPTable = ({ scheme, block, onBack, focusedMetric }) => {
 
             exportRow['Gram Panchayat'] = gpKey ? row[gpKey] : 'N/A';
 
-            displayHeaders.forEach(h => {
+            headersToExport.forEach(h => {
                 exportRow[h] = row[h];
             });
             return exportRow;
