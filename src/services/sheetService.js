@@ -11,13 +11,16 @@ const fixGoogleSheetUrl = (url) => {
         const urlObj = new URL(newUrl);
         urlObj.searchParams.set('output', 'csv');
 
-        // 3. Keep other params (gid, single, etc are preserved by URL object)
+        // 3. Add timestamp to bust cache
+        urlObj.searchParams.set('t', Date.now());
+
+        // 4. Keep other params
         return urlObj.toString();
 
     } catch (e) {
         // Fallback for simple string manipulation if URL parsing fails (e.g. partial url)
         if (url.includes('/pubhtml')) {
-            return url.replace('/pubhtml', '/pub?output=csv');
+            return url.replace('/pubhtml', `/pub?output=csv&t=${Date.now()}`);
         }
         return url;
     }
