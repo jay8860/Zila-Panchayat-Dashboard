@@ -1,19 +1,7 @@
-
-// Helper: Clean numeric values (remove %, trim)
-const cleanValue = (val) => {
-    if (typeof val === 'number') return val;
-    if (!val) return 0;
-    const clean = val.toString().replace('%', '').trim();
-    return parseFloat(clean) || 0;
-};
+import { getPrimaryMetric, cleanValue } from './metricUtils';
 
 // Helper: safe formatting
 const fmt = (num) => (num !== undefined && num !== null) ? num.toLocaleString() : '0';
-
-// Helper: Find columns by keywords
-const findKey = (keys, keywords) => {
-    return keys.find(k => keywords.some(kw => k.toLowerCase().includes(kw.toLowerCase())));
-};
 
 // Helper: Normalize Block Names
 // Maps Hindi/Case variations to Canonical English Names
@@ -62,16 +50,16 @@ export const generateCEOReport = ({ blockName, schemeGroups, data, schemes }) =>
 
             const keys = Object.keys(schemeData[0]);
 
-            // 1. Identify Keys
-            const blockKey = findKey(keys, ['block', 'name of block']);
-            const gpKey = findKey(keys, ['gram panchayat', 'gp name', 'gp', 'name of gp']);
+            // 1. Identify Metric using Centralized Logic
+            const metric = getPrimaryMetric(keys);
 
-            // Metrics
-            const percentageKey = findKey(keys, ['%', 'percentage', 'achievement', 'progress']);
-            const targetKey = findKey(keys, ['target', 'goal']);
-            const doneKey = findKey(keys, ['completed', 'accomplished', 'done', 'sanction', 'works']); // Broad "Done" matching
+            if (!metric) return; // Skip if no valid metric found
 
-            if (!blockKey || !percentageKey) return; // Skip if cant analyze progress
+            // Find Block and GP Keys
+            const blockKey = keys.find(k => k.toLowerCase().includes('block') || k.toLowerCase().includes('name of block'));
+            const gpKey = keys.find(k => k.toLowerCase().includes('gram panchayat') || k.toLowerCase().includes('gp name') || k.toLowerCase().includes('gp') || k.toLowerCase().includes('name of gp'));
+
+            if (!blockKey) return;
 
             // 2. Aggregation Logic
             // Create Block Map for Benchmarking
@@ -86,19 +74,38 @@ export const generateCEOReport = ({ blockName, schemeGroups, data, schemes }) =>
 
                 const normBName = normalizeBlockName(rawBName);
 
+                // Get Value
+                let val = 0;
+                let target = 0;
+                let done = 0;
+
+                if (metric.type === 'DIRECT' || metric.type === 'COUNT') {
+                    val = cleanValue(row[metric.key]);
+                } else if (metric.type === 'CALCULATED') {
+                    target = cleanValue(row[metric.targetKey]);
+                    done = cleanValue(row[metric.doneKey]);
+                    if (target > 0) val = Math.round((done / target) * 100);
+                    else val = 0;
+                }
+
+                // If Calculated or Direct, we might still want T/D context if available
+                if (metric.targetKey && metric.doneKey) {
+                    target = cleanValue(row[metric.targetKey]);
+                    done = cleanValue(row[metric.doneKey]);
+                }
+
                 // Benchmarking Data
                 if (!blockMap[normBName]) blockMap[normBName] = { sum: 0, count: 0 };
-                const val = cleanValue(row[percentageKey]);
                 blockMap[normBName].sum += val;
                 blockMap[normBName].count += 1;
 
-                // Current Block Data (Using Normalized Check)
+                // Current Block Data
                 if (normBName === targetedBlock) {
                     currentBlockGPs.push({
                         name: row[gpKey] || 'Unknown GP',
                         val: val,
-                        target: targetKey ? cleanValue(row[targetKey]) : '-',
-                        done: doneKey ? cleanValue(row[doneKey]) : '-'
+                        target: target ? cleanValue(target) : '-',
+                        done: done ? cleanValue(done) : '-'
                     });
                 }
             });
@@ -133,12 +140,15 @@ export const generateCEOReport = ({ blockName, schemeGroups, data, schemes }) =>
 
             // 5. Construct Section
             groupChunk.push(`\n*📌 Scheme: ${scheme}*`);
-            // Explicitly mention what the percentage is
-            groupChunk.push(`${statusEmoji} Your Avg *(${percentageKey})*: *${currentBlockAvg}%*`);
-            groupChunk.push(`| Top Block (${topBlock}): *${maxAvg}%*`);
+
+            // Format Value based on Metric Type
+            const valSuffix = metric.isPercentage ? '%' : '';
+
+            groupChunk.push(`${statusEmoji} Your Avg *(${metric.label})*: *${currentBlockAvg}${valSuffix}*`);
+            groupChunk.push(`| Top Block (${topBlock}): *${maxAvg}${valSuffix}*`);
 
             if (currentBlockAvg < maxAvg) {
-                groupChunk.push(`📉 Gap: -${gap}% from Top`);
+                groupChunk.push(`📉 Gap: -${gap}${valSuffix} from Top`);
             } else {
                 groupChunk.push(`🏆 You are the Top Performer!`);
             }
@@ -146,10 +156,9 @@ export const generateCEOReport = ({ blockName, schemeGroups, data, schemes }) =>
             if (bottom10.length > 0) {
                 groupChunk.push(`\n_⚠️ Weakest Links (Bottom 10 GPs):_`);
                 bottom10.forEach((gp, idx) => {
-                    let details = `(${gp.val}%)`;
+                    let details = `(${gp.val}${valSuffix})`;
                     if (gp.target !== '-' && gp.done !== '-') {
-                        // Use explicit "Target" and "Done" labels
-                        details = `(${gp.val}% | Target: ${fmt(gp.target)} / Done: ${fmt(gp.done)})`;
+                        details = `(${gp.val}${valSuffix} | Target: ${fmt(gp.target)} / Done: ${fmt(gp.done)})`;
                     }
                     groupChunk.push(`${idx + 1}. ${gp.name} ${details}`);
                 });

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useDashboard } from '../../context/DashboardContext';
 import { AlertTriangle, Copy, Check, FileText, Filter, Building2, Home, BarChart2 } from 'lucide-react';
 import { generateCEOReport, normalizeBlockName } from '../../utils/ceoReportGenerator';
+import { getPrimaryMetric, cleanValue } from '../../utils/metricUtils';
 
 const ActionHub = () => {
     const { schemes, data, nodalOfficers, briefingScheme, setBriefingScheme, schemeGroups } = useDashboard();
@@ -24,18 +25,6 @@ const ActionHub = () => {
         generateBriefing();
     }, [selectedScheme, reportLevel]); // Re-run if Scheme or Level changes
 
-    const cleanValue = (val) => {
-        if (typeof val === 'number') return val;
-        if (!val) return 0;
-        // Remove % and trim
-        const clean = val.toString().replace('%', '').trim();
-        return parseFloat(clean) || 0;
-    };
-
-    const findColumn = (keys, keywords) => {
-        return keys.find(k => keywords.some(keyword => k.toLowerCase().includes(keyword.toLowerCase())));
-    };
-
     const generateBriefing = () => {
         const briefs = [];
         const schemesToProcess = selectedScheme === 'All' ? schemes : [selectedScheme];
@@ -48,21 +37,19 @@ const ActionHub = () => {
 
             const keys = Object.keys(schemeData[0]);
 
-            // 1. Identify Columns
-            // Progress
-            const progressKeywords = ['%', 'percentage', 'progress', 'achievement', 'completion', 'rate'];
-            const progressKey = findColumn(keys, progressKeywords);
+            // 1. Identify Metric
+            const metric = getPrimaryMetric(keys);
+            if (!metric) return;
 
-            // GP Name
+            // 2. Identify Block/GP Keys
             const gpKeywords = ['gram panchayat', 'gp name', 'gp', 'panchayat', 'name of gp'];
-            const gpKey = findColumn(keys, gpKeywords);
+            const gpKey = keys.find(k => gpKeywords.some(keyword => k.toLowerCase().includes(keyword.toLowerCase())));
 
-            // Block Name
             const blockKeywords = ['block', 'block name', 'name of block'];
-            const blockKey = findColumn(keys, blockKeywords);
+            const blockKey = keys.find(k => blockKeywords.some(keyword => k.toLowerCase().includes(keyword.toLowerCase())));
 
-            if (!progressKey || !gpKey) {
-                console.warn(`[ActionHub] Skipping ${scheme}: Missing columns (Progress: ${progressKey}, GP: ${gpKey})`);
+            if (!gpKey) {
+                console.warn(`[ActionHub] Skipping ${scheme}: Missing GP Key`);
                 return;
             }
 
@@ -75,25 +62,51 @@ const ActionHub = () => {
 
             if (reportLevel === 'GP') {
                 // --- GP LEVEL LOGIC ---
-                // Filter < 40%
+                // Filter < 40% (Only for percentages)
+                // For direct counts, we might need a different heuristic, but for now assuming alerts needed for low performance
+                // Disabling alert generation for pure Counts unless they are specifically low? 
+                // For now, let's only generate "Low Progress" alerts for PERCENTAGE metrics.
+                if (!metric.isPercentage) return;
+
                 const critical = validRows.filter(row => {
-                    const val = cleanValue(row[progressKey]);
+                    let val = 0;
+                    if (metric.type === 'DIRECT') val = cleanValue(row[metric.key]);
+                    else if (metric.type === 'CALCULATED') {
+                        const t = cleanValue(row[metric.targetKey]);
+                        const d = cleanValue(row[metric.doneKey]);
+                        if (t > 0) val = Math.round((d / t) * 100);
+                    }
                     return val < 40 && val >= 0;
                 });
 
                 // Sort Ascending (worst first)
-                critical.sort((a, b) => cleanValue(a[progressKey]) - cleanValue(b[progressKey]));
+                critical.sort((a, b) => {
+                    // simplified sort for brevity, using same extraction logic
+                    const getVal = (r) => {
+                        if (metric.type === 'DIRECT') return cleanValue(r[metric.key]);
+                        const t = cleanValue(r[metric.targetKey]);
+                        const d = cleanValue(r[metric.doneKey]);
+                        return t > 0 ? Math.round((d / t) * 100) : 0;
+                    };
+                    return getVal(a) - getVal(b);
+                });
 
-                // Take bottom 10 (Updated from 5)
+                // Take bottom 10
                 const bottom10 = critical.slice(0, 10);
 
                 bottom10.forEach(row => {
-                    const val = cleanValue(row[progressKey]);
+                    let val = 0;
+                    if (metric.type === 'DIRECT') val = cleanValue(row[metric.key]);
+                    else if (metric.type === 'CALCULATED') {
+                        const t = cleanValue(row[metric.targetKey]);
+                        const d = cleanValue(row[metric.doneKey]);
+                        if (t > 0) val = Math.round((d / t) * 100);
+                    }
+
                     const gpName = row[gpKey] || 'Unknown GP';
                     const blockName = blockKey ? row[blockKey] : 'Unknown Block';
-                    const officerName = officer?.name || 'District Nodal';
 
-                    const message = `In ${scheme}, Gram Panchayat ${gpName} of ${blockName} Block is at ${val}% (${progressKey}). Please coordinate with Block Coordinators and Sachivs and resolve this immediately.`;
+                    const message = `In ${scheme}, Gram Panchayat ${gpName} of ${blockName} Block is at ${val}% (${metric.label}). Please coordinate with Block Coordinators and Sachivs and resolve this immediately.`;
 
                     briefs.push({
                         id: Math.random().toString(36).substr(2, 9),
@@ -108,10 +121,7 @@ const ActionHub = () => {
 
             } else {
                 // --- BLOCK LEVEL LOGIC ---
-                if (!blockKey) {
-                    // Only warn once per scheme
-                    return;
-                }
+                if (!blockKey) return;
 
                 // Group by Block
                 const blocks = {};
@@ -123,23 +133,61 @@ const ActionHub = () => {
 
                 Object.entries(blocks).forEach(([blockName, rows]) => {
                     // Calculate Average
-                    const sum = rows.reduce((acc, r) => acc + cleanValue(r[progressKey]), 0);
-                    const avg = rows.length > 0 ? Math.round(sum / rows.length) : 0;
+                    let avg = 0;
+
+                    if (metric.type === 'DIRECT' && metric.isPercentage) {
+                        const sum = rows.reduce((acc, r) => acc + cleanValue(r[metric.key]), 0);
+                        avg = rows.length > 0 ? Math.round(sum / rows.length) : 0;
+                    }
+                    else if (metric.type === 'CALCULATED') {
+                        let totalT = 0, totalD = 0;
+                        rows.forEach(r => {
+                            totalT += cleanValue(r[metric.targetKey]);
+                            totalD += cleanValue(r[metric.doneKey]);
+                        });
+                        if (totalT > 0) avg = Math.round((totalD / totalT) * 100);
+                    }
+                    // Skip Count metrics for Block Briefs? Or show Sum? 
+                    // Let's show Sum for Count metrics but no %
+                    else if (metric.type === 'COUNT') {
+                        const sum = rows.reduce((acc, r) => acc + cleanValue(r[metric.key]), 0);
+                        avg = sum;
+                    }
 
                     // Find Bottom 10 GPs
-                    const sortedGPs = [...rows].sort((a, b) => cleanValue(a[progressKey]) - cleanValue(b[progressKey]));
+                    const sortedGPs = [...rows].sort((a, b) => {
+                        const getVal = (r) => {
+                            if (metric.type === 'DIRECT' || metric.type === 'COUNT') return cleanValue(r[metric.key]);
+                            const t = cleanValue(r[metric.targetKey]);
+                            const d = cleanValue(r[metric.doneKey]);
+                            return t > 0 ? Math.round((d / t) * 100) : 0;
+                        };
+                        return getVal(a) - getVal(b);
+                    });
                     const bottom10 = sortedGPs.slice(0, 10);
 
                     // Construct Message
-                    let gpList = bottom10.map((r, i) => `${i + 1}. ${r[gpKey]} (${cleanValue(r[progressKey])}%)`).join('\n');
+                    const valSuffix = metric.isPercentage ? '%' : '';
+                    let gpList = bottom10.map((r, i) => {
+                        let val = 0;
+                        if (metric.type === 'DIRECT' || metric.type === 'COUNT') val = cleanValue(r[metric.key]);
+                        else {
+                            const t = cleanValue(r[metric.targetKey]);
+                            const d = cleanValue(r[metric.doneKey]);
+                            if (t > 0) val = Math.round((d / t) * 100);
+                        }
+                        return `${i + 1}. ${r[gpKey]} (${val}${valSuffix})`;
+                    }).join('\n');
 
                     const message = `*${scheme} - ${blockName} Block Report*\n` +
                         `To Block Nodal,\n` +
-                        `Overall Block Progress: *${avg}% (${progressKey})*\n\n` +
+                        `Overall Block Progress: *${avg}${valSuffix} (${metric.label})*\n\n` +
                         `*Bottom 10 GPs requiring immediate attention:*\n` +
                         `${gpList}\n\n` +
                         `Please direct Block Coordinators and Sachivs to improve coverage immediately.`;
 
+                    // Only push block brief if it's actionable? 
+                    // For now pushing all block briefs.
                     briefs.push({
                         id: Math.random().toString(36).substr(2, 9),
                         type: 'BLOCK',
@@ -148,7 +196,7 @@ const ActionHub = () => {
                         title: blockName,
                         value: avg,
                         message,
-                        details: bottom10 // For potential UI expansion
+                        details: bottom10
                     });
                 });
             }

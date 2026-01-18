@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { generateMockData } from '../data/mockDataGenerator';
 import { fetchSheetData, normalizeSheetData } from '../services/sheetService';
 import { useConfig } from './ConfigContext';
+import { getPrimaryMetric } from '../utils/metricUtils';
 
 const DashboardContext = createContext();
 
@@ -78,101 +79,61 @@ export const DashboardProvider = ({ children }) => {
         return () => clearInterval(timer);
     }, [syncStatus]);
 
-    // Helper: Identify the metric column
-    const getProgressKey = (keys) => {
-        const kLower = keys.map(k => k.toLowerCase());
-
-        // Top Priority: Specific User Keys
-        const sanctionKey = keys.find(k => k.toLowerCase().includes('sanction %') || k.toLowerCase().includes('sanction percentage'));
-        if (sanctionKey) return sanctionKey;
-
-        const completionKey = keys.find(k => k.toLowerCase().includes('completion %') || k.toLowerCase().includes('completion against target'));
-        if (completionKey) return completionKey;
-
-        // Priority 2: Generic Percentage
-        let key = keys.find(k => k.toLowerCase().includes("(%)") || k.toLowerCase().includes("percentage") || k.includes("%"));
-        if (key) return key;
-
-        return null;
-    };
-
-    // Helper: Identify numerator/denominator interactions
-    const getPerformanceKeys = (keys) => {
-        // Denominator: Target
-        const targetKey = keys.find(k => k.toLowerCase().includes('target') && !k.toLowerCase().includes('achievement'));
-
-        // Numerator: Sanction Done, Registration Done, Achievement, Completed
-        let doneKey = keys.find(k => k.toLowerCase().includes('sanction done'));
-        if (!doneKey) doneKey = keys.find(k => k.toLowerCase().includes('registration done'));
-        if (!doneKey) doneKey = keys.find(k => k.toLowerCase().includes('achievement'));
-        if (!doneKey) doneKey = keys.find(k => k.toLowerCase().includes('completed'));
-
-        return { targetKey, doneKey };
-    };
-
-    // Helper: District Average
+    // Helper: District Average (Refactored to use shared logic)
     const getDistrictAverage = (schemeName) => {
         const schemeRows = data[schemeName];
         if (!schemeRows || schemeRows.length === 0) return { value: 0, isPercentage: false };
 
         const keys = Object.keys(schemeRows[0]);
-        const progressKey = getProgressKey(keys);
         const blockKey = keys.find(k => k.toLowerCase().includes('block')) || 'Block';
 
-        // 1. Precise Match: "Total" Row (Percentage)
-        if (progressKey) {
+        // Use Centralized Metric Logic
+        const metric = getPrimaryMetric(keys);
+        if (!metric) return { value: "N/A", isPercentage: false };
+
+        // 1. Direct Metric (Percentage or Count)
+        if (metric.type === 'DIRECT' || metric.type === 'COUNT') {
+            // Try to find "Total" row first
             const totalRow = schemeRows.find(r => r[blockKey] && r[blockKey].trim().toLowerCase() === 'total');
-            if (totalRow && !isNaN(parseFloat(totalRow[progressKey]))) {
-                return { value: Math.round(parseFloat(totalRow[progressKey])), isPercentage: true };
+            if (totalRow && !isNaN(parseFloat(totalRow[metric.key]))) {
+                return {
+                    value: Math.round(parseFloat(totalRow[metric.key])),
+                    isPercentage: metric.isPercentage,
+                    label: metric.label
+                };
+            }
+
+            // Fallback: Average of rows
+            const validRows = schemeRows.filter(r => {
+                const isTotal = r[blockKey]?.toLowerCase() === 'total';
+                return !isTotal && !isNaN(parseFloat(r[metric.key]));
+            });
+
+            if (validRows.length > 0) {
+                // If it's a COUNT, we SUM it. If it's a PERCENTAGE, we AVERAGE it.
+                if (metric.type === 'COUNT') {
+                    const total = validRows.reduce((sum, row) => sum + parseFloat(row[metric.key]), 0);
+                    return { value: Math.round(total), isPercentage: false, label: metric.label };
+                } else {
+                    const total = validRows.reduce((sum, row) => sum + parseFloat(row[metric.key]), 0);
+                    return { value: Math.round(total / validRows.length), isPercentage: true };
+                }
             }
         }
 
-        // 2. Weighted Average: Sum(Done) / Sum(Target) (Percentage)
-        const { targetKey, doneKey } = getPerformanceKeys(keys);
-        if (targetKey && doneKey) {
+        // 2. Calculated Metric (Target vs Done)
+        if (metric.type === 'CALCULATED') {
             let totalTarget = 0;
             let totalDone = 0;
             schemeRows.forEach(row => {
                 if (row[blockKey] && row[blockKey].trim().toLowerCase() === 'total') return;
-                totalTarget += parseFloat(row[targetKey]) || 0;
-                totalDone += parseFloat(row[doneKey]) || 0;
+                totalTarget += parseFloat(row[metric.targetKey]) || 0;
+                totalDone += parseFloat(row[metric.doneKey]) || 0;
             });
 
             if (totalTarget > 0) {
-                return { value: Math.round((totalDone / totalTarget) * 100), isPercentage: true };
+                return { value: Math.round((totalDone / totalTarget) * 100), isPercentage: true, label: metric.label };
             }
-        }
-
-        // 3. Simple Average of Percentages (Percentage)
-        if (progressKey) {
-            const validRows = schemeRows.filter(r => {
-                const isTotal = r[blockKey]?.toLowerCase() === 'total';
-                return !isTotal && !isNaN(parseFloat(r[progressKey]));
-            });
-
-            if (validRows.length > 0) {
-                const total = validRows.reduce((sum, row) => sum + parseFloat(row[progressKey]), 0);
-                return { value: Math.round(total / validRows.length), isPercentage: true };
-            }
-        }
-
-        // 4. FALLBACK: Sum of Count Metric (Count)
-        // If no percentage found, look for "Count" metrics to sum up.
-        // Priorities: Done > Target > Beneficiaries > Works > Amount
-        const countKey = doneKey || targetKey || keys.find(k => {
-            const lower = k.toLowerCase();
-            return lower.includes('beneficiar') || lower.includes('works') || lower.includes('amount') || lower.includes('cost') || lower.includes('total');
-        });
-
-        if (countKey) {
-            let totalSum = 0;
-            schemeRows.forEach(row => {
-                if (row[blockKey] && row[blockKey].trim().toLowerCase() === 'total') return;
-                const val = parseFloat(row[countKey]);
-                if (!isNaN(val)) totalSum += val;
-            });
-            // Heuristic: If sum is huge, it's definitely not a percentage.
-            return { value: Math.round(totalSum), isPercentage: false, label: countKey };
         }
 
         return { value: "N/A", isPercentage: false };
