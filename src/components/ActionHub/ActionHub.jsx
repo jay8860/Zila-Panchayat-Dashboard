@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useDashboard } from '../../context/DashboardContext';
-import { AlertTriangle, Copy, Check, FileText, Filter, Building2, Home, BarChart2 } from 'lucide-react';
+import { AlertTriangle, Copy, Check, FileText, Filter, Building2, Home, BarChart2, Download } from 'lucide-react';
 import { generateCEOReport, normalizeBlockName } from '../../utils/ceoReportGenerator';
 import { getPrimaryMetric, cleanValue } from '../../utils/metricUtils';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 const ActionHub = () => {
     const { schemes, data, nodalOfficers, briefingScheme, setBriefingScheme, schemeGroups } = useDashboard();
@@ -12,6 +14,35 @@ const ActionHub = () => {
     const [reportMode, setReportMode] = useState('BRIEF'); // 'BRIEF' | 'CEO_REPORT'
     const [selectedBlock, setSelectedBlock] = useState('');
     const [ceoReportText, setCeoReportText] = useState('');
+    const reportRef = useRef(null);
+
+    const handleDownloadPDF = async () => {
+        if (!reportRef.current) return;
+
+        try {
+            const canvas = await html2canvas(reportRef.current, {
+                scale: 2, // Higher quality
+                backgroundColor: '#ffffff', // Force white background for print
+                logging: false
+            });
+
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            const imgWidth = 210; // A4 width in mm
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+            pdf.save(`CEO_Report_${selectedBlock}_${new Date().toISOString().split('T')[0]}.pdf`);
+        } catch (error) {
+            console.error("PDF Generation failed", error);
+            alert("Failed to generate PDF. Please try again.");
+        }
+    };
 
     // Sync with global briefing selection (from Dashboard click)
     useEffect(() => {
@@ -318,16 +349,25 @@ const ActionHub = () => {
                                     <FileText size={18} className="text-indigo-500" />
                                     Generated Report
                                 </h3>
-                                <button
-                                    onClick={() => copyToClipboard(ceoReportText, 'full_report')}
-                                    className="text-xs flex items-center gap-1.5 bg-background border border-border hover:bg-muted px-3 py-1.5 rounded-md transition-colors"
-                                >
-                                    {copiedId === 'full_report' ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
-                                    {copiedId === 'full_report' ? 'Copied!' : 'Copy to Clipboard'}
-                                </button>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={handleDownloadPDF}
+                                        className="text-xs flex items-center gap-1.5 bg-background border border-border hover:bg-muted px-3 py-1.5 rounded-md transition-colors"
+                                    >
+                                        <Download size={14} />
+                                        PDF
+                                    </button>
+                                    <button
+                                        onClick={() => copyToClipboard(ceoReportText, 'full_report')}
+                                        className="text-xs flex items-center gap-1.5 bg-background border border-border hover:bg-muted px-3 py-1.5 rounded-md transition-colors"
+                                    >
+                                        {copiedId === 'full_report' ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+                                        {copiedId === 'full_report' ? 'Copied!' : 'Copy'}
+                                    </button>
+                                </div>
                             </div>
-                            <div className="p-6 bg-slate-50 dark:bg-slate-950/30">
-                                <pre className="whitespace-pre-wrap font-mono text-sm leading-relaxed text-foreground/80">
+                            <div ref={reportRef} className="p-6 bg-slate-50 text-slate-900">
+                                <pre className="whitespace-pre-wrap font-mono text-sm leading-relaxed">
                                     {ceoReportText}
                                 </pre>
                             </div>
