@@ -1,23 +1,18 @@
 import React, { useState } from 'react';
 import { useConfig } from '../../context/ConfigContext';
-import { PlusCircle, List, Type } from 'lucide-react';
+import { PlusCircle, Type } from 'lucide-react';
 
 const SchemeManager = ({ onSchemeAdded }) => {
     const { addScheme } = useConfig();
     const [name, setName] = useState('');
-    const [headers, setHeaders] = useState('');
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (!name || !headers) return;
+        if (!name.trim()) return;
 
-        addScheme(name);
+        addScheme(name.trim());
 
-        // Reset
         setName('');
-        setHeaders('');
-
-        // Notify user via alert for now, essentially just feedback
         alert(`New Task/Scheme "${name}" added successfully!`);
         if (onSchemeAdded) onSchemeAdded();
     };
@@ -48,25 +43,9 @@ const SchemeManager = ({ onSchemeAdded }) => {
                         />
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium flex items-center gap-2">
-                            <List size={16} />
-                            Custom Headers (comma separated)
-                        </label>
-                        <textarea
-                            value={headers}
-                            onChange={(e) => setHeaders(e.target.value)}
-                            placeholder="e.g., Target Households, Connected Households, Start Date, Completion (%)"
-                            className="w-full bg-muted/50 border border-border rounded-lg px-4 py-3 min-h-[120px] focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground font-mono text-sm"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                            Tip: Include "(%)" in a header name to enable progress bars and heat-map coloring automatically.
-                        </p>
-                    </div>
-
                     <button
                         type="submit"
-                        disabled={!name || !headers}
+                        disabled={!name.trim()}
                         className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-medium hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                         <PlusCircle size={20} />

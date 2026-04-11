@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { generateMockData } from '../data/mockDataGenerator';
 import { fetchSheetData, normalizeSheetData } from '../services/sheetService';
 import { useConfig } from './ConfigContext';
 import { getPrimaryMetric } from '../utils/metricUtils';
