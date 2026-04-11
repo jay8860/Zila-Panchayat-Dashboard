@@ -165,16 +165,20 @@ export const ConfigProvider = ({ children }) => {
             schemes: g.schemes.filter(s => s !== scheme)
         }));
 
+        const newHidden = hiddenSchemes.filter(s => s !== scheme);
         setSchemes(newSchemes);
         setSheetUrls(newUrls);
         setNodalOfficers(newOfficers);
         setSchemeGroups(newGroups);
+        setHiddenSchemes(newHidden);
 
         saveToBackend({
             schemes: newSchemes,
+            hiddenSchemes: newHidden,
             nodalOfficers: newOfficers,
             sheetUrls: newUrls,
-            schemeGroups: newGroups
+            schemeGroups: newGroups,
+            snapshots
         });
     };
 

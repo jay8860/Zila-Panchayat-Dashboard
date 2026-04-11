@@ -13,7 +13,9 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { ThemeProvider } from './context/ThemeContext';
 
 const DashboardView = ({ onOpenSettings, onOpenBriefing }) => {
-  const { schemes, loading } = useDashboard();
+  const { schemes, loading, setBriefingScheme } = useDashboard();
+  const { schemeGroups: groups, hiddenSchemes } = useConfig();
+  const { userRole } = useAuth();
 
   const [viewState, setViewState] = useState({
     level: 'DISTRICT',
@@ -54,10 +56,6 @@ const DashboardView = ({ onOpenSettings, onOpenBriefing }) => {
       />
     );
   }
-
-  const { setBriefingScheme } = useDashboard();
-  const { schemeGroups: groups, hiddenSchemes } = useConfig();
-  const { userRole } = useAuth();
 
   if (viewState.level === 'BLOCK') {
     return (
@@ -151,7 +149,11 @@ const AuthenticatedApp = () => {
   const { isAuthenticated, checking, userRole } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  if (checking) return null;
+  if (checking) return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+    </div>
+  );
 
   if (!isAuthenticated) {
     return <Login />;

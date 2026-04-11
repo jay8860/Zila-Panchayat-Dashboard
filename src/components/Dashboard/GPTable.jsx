@@ -23,7 +23,9 @@ const GPTable = ({ scheme, block, onBack, focusedMetric }) => {
         if (isDistrictTotal) {
             return schemeData; // Show ALL data
         }
-        return schemeData.filter(row => row.Block === block);
+        if (schemeData.length === 0) return [];
+        const blockKey = Object.keys(schemeData[0]).find(k => k.toLowerCase().includes('block')) || 'Block';
+        return schemeData.filter(row => row[blockKey] === block);
     }, [data, scheme, block, isDistrictTotal]);
 
     // 2. Identify GP Key and Other Headers
@@ -45,10 +47,6 @@ const GPTable = ({ scheme, block, onBack, focusedMetric }) => {
 
         const otherKeys = allKeys.filter(k => !ignoredKeys.includes(k.toLowerCase()));
 
-        return {
-            gpKey: foundGpKey,
-            displayHeaders: otherKeys
-        };
         return {
             gpKey: foundGpKey,
             displayHeaders: otherKeys
@@ -152,20 +150,20 @@ const GPTable = ({ scheme, block, onBack, focusedMetric }) => {
 
         // Is this the focused column?
         if (focusedMetric === key) {
-            style += ' ring-2 ring-primary/20 bg-primary/5 '; // Highlight border/bg
+            style += ' ring-2 ring-primary/20 bg-primary/5 ';
         }
 
         const isPercentage = keywords.some(k => lowerKey.includes(k));
-        if (!keywords.some(k => lowerKey.includes(k))) return "";
+        if (!isPercentage) return style; // Return focused style even for non-percentage columns
 
         const num = parseFloat(value);
-        if (isNaN(num)) return "";
+        if (isNaN(num)) return style;
 
-        if (num >= 75) return "bg-emerald-500/20 text-emerald-400 font-medium";
-        if (num < 40) return "bg-red-500/20 text-red-400 font-medium";
-        if (num >= 40) return "bg-amber-500/20 text-amber-400 font-medium";
+        if (num >= 75) return style + " bg-emerald-500/20 text-emerald-400 font-medium";
+        if (num < 40) return style + " bg-red-500/20 text-red-400 font-medium";
+        if (num >= 40) return style + " bg-amber-500/20 text-amber-400 font-medium";
 
-        return "";
+        return style;
     };
 
     // --- Export Logic ---
@@ -431,7 +429,7 @@ const GPTable = ({ scheme, block, onBack, focusedMetric }) => {
                             ))
                         ) : (
                             <tr>
-                                <td colSpan={displayHeaders.length + (isDistrictTotal ? 3 : 2)} className="px-6 py-10 text-center text-muted-foreground">
+                                <td colSpan={orderedHeaders.length + (isDistrictTotal ? 3 : 2)} className="px-6 py-10 text-center text-muted-foreground">
                                     No data found.
                                 </td>
                             </tr>

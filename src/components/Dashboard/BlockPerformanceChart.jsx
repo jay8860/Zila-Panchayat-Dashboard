@@ -29,7 +29,7 @@ const BlockPerformanceChart = ({ scheme, onBack, onBlockClick }) => {
             const percentKey = availableMetrics.find(k => k.includes('%') || k.toLowerCase().includes('percent'));
             setSelectedMetric(percentKey || availableMetrics[0]);
         }
-    }, [availableMetrics]);
+    }, [availableMetrics, selectedMetric]);
 
     // Detect Percentage Metric (based on Data or Name)
     // Heuristic: If ANY row's value is a string containing '%', it's a percentage.

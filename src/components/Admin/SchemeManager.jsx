@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { useDashboard } from '../../context/DashboardContext';
+import { useConfig } from '../../context/ConfigContext';
 import { PlusCircle, List, Type } from 'lucide-react';
 
 const SchemeManager = ({ onSchemeAdded }) => {
-    const { addScheme } = useDashboard();
+    const { addScheme } = useConfig();
     const [name, setName] = useState('');
     const [headers, setHeaders] = useState('');
 
@@ -11,8 +11,7 @@ const SchemeManager = ({ onSchemeAdded }) => {
         e.preventDefault();
         if (!name || !headers) return;
 
-        const headerList = headers.split(',').map(h => h.trim()).filter(h => h);
-        addScheme(name, headerList);
+        addScheme(name);
 
         // Reset
         setName('');
