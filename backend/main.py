@@ -6,6 +6,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import logging
 
+try:
+    from backend.nic_sync_service import load_data, run_sync, PORTALS, get_portal_status
+except ImportError:
+    from nic_sync_service import load_data, run_sync, PORTALS, get_portal_status
+
+
 # --- Setup ---
 app = FastAPI()
 
@@ -301,6 +307,30 @@ def add_scheme(name: str):
             db.schemeGroups[0].schemes.append(name)
         save_db(db)
     return db
+
+# --- NIC Sync Module Routes ---
+
+@app.get("/api/nic/status")
+def get_nic_status():
+    results = []
+    for name, url in PORTALS.items():
+        results.append(get_portal_status(name, url))
+    return results
+
+@app.post("/api/nic/sync")
+def trigger_nic_sync():
+    try:
+        result = run_sync()
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Sync failed: {str(e)}")
+
+@app.get("/api/nic/data")
+def get_nic_data():
+    try:
+        return load_data()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to load data: {str(e)}")
 
 # --- Serve Frontend (Production) ---
 from fastapi.staticfiles import StaticFiles

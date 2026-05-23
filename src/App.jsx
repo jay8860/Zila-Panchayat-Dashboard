@@ -11,6 +11,7 @@ import AdminPanel from './components/Admin/AdminPanel';
 import Login from './components/Auth/Login';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ThemeProvider } from './context/ThemeContext';
+import NICLiveDashboard from './components/Dashboard/NICLiveDashboard';
 
 const DashboardView = ({ onOpenSettings, onOpenBriefing }) => {
   const { schemes, loading } = useDashboard();
@@ -179,6 +180,7 @@ const AuthenticatedApp = () => {
                 />
               )}
               {activeTab === 'action-hub' && <ActionHub />}
+              {activeTab === 'nic-live' && <NICLiveDashboard />}
               {activeTab === 'settings' && userRole === 'admin' && <AdminPanel />}
             </ErrorBoundary>
           </main>

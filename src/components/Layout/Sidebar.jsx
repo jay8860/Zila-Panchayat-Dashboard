@@ -11,6 +11,7 @@ import {
     AlertTriangle,
     Sun,
     Moon,
+    Globe,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useDashboard } from '../../context/DashboardContext';
@@ -23,6 +24,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
     const menuItems = [
         { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
         { id: 'action-hub', icon: MessageSquareShare, label: 'Action Hub' },
+        { id: 'nic-live', icon: Globe, label: 'NIC Live Sync' },
         { id: 'settings', icon: Settings, label: 'Admin Settings', role: 'admin' },
     ].filter(item => !item.role || item.role === userRole);
 
