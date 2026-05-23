@@ -60,6 +60,60 @@ def get_portal_status(name, url):
             "error": str(e)
         }
 
+def load_gps_from_csv():
+    gps_by_block = {
+        "Dantewada": [],
+        "Geedam": [],
+        "Kuakonda": [],
+        "Katekalyan": []
+    }
+    csv_path = os.path.join(os.path.dirname(__file__), "gp_coords_cache.csv")
+    if not os.path.exists(csv_path):
+        return None
+        
+    try:
+        with open(csv_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+            for line in lines[1:]: # Skip header
+                line = line.strip()
+                if not line:
+                    continue
+                parts = line.split(",")
+                if len(parts) > 0:
+                    loc_key = parts[0]
+                    # Format is GPNAME_BLOCKNAME
+                    if "_" in loc_key:
+                        gp_part, block_part = loc_key.rsplit("_", 1)
+                        gp_name = gp_part.strip().title()
+                        block_name = block_part.strip().upper()
+                        
+                        # Map block names
+                        mapped_block = None
+                        if block_name == "DANTEWADA":
+                            mapped_block = "Dantewada"
+                        elif block_name == "GEEDAM":
+                            mapped_block = "Geedam"
+                        elif block_name in ["KUWAKONDA", "KUAKONDA"]:
+                            mapped_block = "Kuakonda"
+                        elif block_name == "KATEKALYAN":
+                            mapped_block = "Katekalyan"
+                            
+                        if mapped_block and gp_name and gp_name not in gps_by_block[mapped_block]:
+                            # Filter out duplicates and administrative units like "DH Dantewada"
+                            if "dh dantewada" not in gp_name.lower() and "bade bacheli" not in gp_name.lower() and gp_name != "Nan":
+                                gps_by_block[mapped_block].append(gp_name)
+    except Exception as e:
+        print(f"Error reading GP CSV: {e}")
+        return None
+        
+    # Ensure every block has at least some GPs
+    for b in gps_by_block:
+        gps_by_block[b] = sorted(list(set(gps_by_block[b])))
+        if len(gps_by_block[b]) == 0:
+            return None # Force fallback if anything went wrong
+            
+    return gps_by_block
+
 def initialize_data():
     """Generates the initial authentic dataset for Dantewada."""
     data = {
@@ -78,12 +132,16 @@ def initialize_data():
         "PMAY-U": []
     }
 
+    gps_map = load_gps_from_csv()
+    if not gps_map:
+        gps_map = GPs_BY_BLOCK
+
     # Helper for random values
     def val(a, b):
         return random.randint(a, b)
 
     # Populate GP-level Schemes
-    for block, gps in GPs_BY_BLOCK.items():
+    for block, gps in gps_map.items():
         for gp in gps:
             # 1. MGNREGA
             active_cards = val(200, 1200)
@@ -185,14 +243,20 @@ def initialize_data():
     return data
 
 def load_data():
-    """Loads the NIC live synced data. Initializes if missing."""
+    """Loads the NIC live synced data. Initializes if missing, or upgrades if low count."""
     if not os.path.exists(NIC_DB_FILE):
         data = initialize_data()
         save_data(data)
         return data
     try:
         with open(NIC_DB_FILE, "r") as f:
-            return json.load(f)
+            data = json.load(f)
+            # Migration check: if the database has less than 50 GPs, force re-initialize with full set from CSV
+            if "MGNREGA" not in data or len(data["MGNREGA"]) < 50:
+                print("Upgrading database: Loading full Gram Panchayat list from CSV...")
+                data = initialize_data()
+                save_data(data)
+            return data
     except Exception as e:
         print(f"Error loading NIC DB: {e}")
         return initialize_data()
