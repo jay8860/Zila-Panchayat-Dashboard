@@ -6,13 +6,15 @@ import urllib.parse
 import random
 from datetime import datetime
 
+import ssl
+
 DATA_DIR = os.environ.get("DATA_DIR", ".")
 NIC_DB_FILE = os.path.join(DATA_DIR, "nic_live_data.json")
 
 PORTALS = {
     "MGNREGA": "https://nrega.nic.in",
-    "SBM-G": "https://sbm.gov.in/sbmgdashboard/statesdashboard.aspx",
-    "NRLM": "https://nrlm.gov.in/outerReportAction.do?methodName=showReportMaster",
+    "SBM-G": "https://sbm.gov.in",
+    "NRLM": "https://nrlm.gov.in",
     "PMAY-G": "https://pmayg.nic.in",
     "PMAY-U": "https://pmaymis.gov.in"
 }
@@ -37,7 +39,9 @@ def get_portal_status(name, url):
             url, 
             headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
         )
-        with urllib.request.urlopen(req, timeout=5) as response:
+        # Create unverified SSL context to bypass invalid/expired certificate errors common on govt sites
+        ctx = ssl._create_unverified_context()
+        with urllib.request.urlopen(req, timeout=5, context=ctx) as response:
             latency = int((time.time() - start_time) * 1000)
             return {
                 "name": name,

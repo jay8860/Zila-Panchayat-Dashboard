@@ -624,6 +624,34 @@ const NICLiveDashboard = () => {
                     ))}
                 </div>
 
+                {/* Source & Sync Metadata Banner */}
+                <div className="bg-muted/10 border-b border-border/50 px-6 py-2.5 flex flex-wrap items-center justify-between text-[11px] text-muted-foreground gap-3">
+                    <div className="flex items-center gap-1.5">
+                        <span>Source Website:</span>
+                        <a 
+                            href={PORTAL_URLS[activeScheme]} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            className="text-emerald-500 font-medium hover:underline hover:text-emerald-400 flex items-center gap-0.5"
+                        >
+                            {PORTAL_URLS[activeScheme]}
+                        </a>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div>
+                            Status: <span className={clsx(
+                                "font-bold",
+                                (portals.find(p => p.name === activeScheme)?.status === "ONLINE") ? "text-emerald-400" : "text-red-400"
+                            )}>
+                                {portals.find(p => p.name === activeScheme)?.status || "UNKNOWN"}
+                            </span>
+                        </div>
+                        <div>
+                            Last Sync Run: <span className="font-semibold text-foreground">{lastSynced ? lastSynced.toLocaleString() : 'Never'}</span>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Data Grid Table */}
                 <div className="overflow-x-auto w-full max-h-[500px]">
                     {loading ? (
@@ -642,7 +670,7 @@ const NICLiveDashboard = () => {
                                         <th
                                             key={col}
                                             onClick={() => requestSort(col)}
-                                            className="px-5 py-3.5 cursor-pointer hover:text-foreground whitespace-nowrap sticky left-0 bg-[#14151b] border-r border-border"
+                                            className="px-5 py-3.5 cursor-pointer hover:text-foreground whitespace-nowrap sticky left-0 bg-card border-r border-border"
                                             style={{ zIndex: 12, minWidth: '130px' }}
                                         >
                                             <div className="flex items-center">
@@ -701,7 +729,7 @@ const NICLiveDashboard = () => {
                                         {primaryColumns.map(col => (
                                             <td 
                                                 key={`${idx}-${col}`}
-                                                className="px-5 py-3.5 font-semibold text-foreground whitespace-nowrap sticky left-0 bg-[#14151b] border-r border-border"
+                                                className="px-5 py-3.5 font-semibold text-foreground whitespace-nowrap sticky left-0 bg-card border-r border-border"
                                                 style={{ zIndex: 11 }}
                                             >
                                                 {row[col]}
@@ -745,7 +773,7 @@ const NICLiveDashboard = () => {
                                     {primaryColumns.map((col, cIdx) => (
                                         <td 
                                             key={`total-${col}`}
-                                            className="px-5 py-4 whitespace-nowrap text-foreground bg-[#1c1d25] border-r border-border sticky left-0"
+                                            className="px-5 py-4 whitespace-nowrap text-foreground bg-muted border-r border-border sticky left-0"
                                             style={{ zIndex: 11 }}
                                         >
                                             {cIdx === 0 ? "District Summary" : "-"}
@@ -760,7 +788,7 @@ const NICLiveDashboard = () => {
                                             <td
                                                 key={`total-${header}`}
                                                 className={clsx(
-                                                    "px-5 py-4 whitespace-nowrap bg-[#1c1d25] text-emerald-400 font-semibold",
+                                                    "px-5 py-4 whitespace-nowrap bg-muted text-emerald-600 dark:text-emerald-400 font-semibold",
                                                     isPinned && "sticky z-10 border-r border-border shadow-[2px_0_5px_-2px_rgba(0,0,0,0.4)]"
                                                 )}
                                                 style={isPinned ? { left: `${stickyLeft}px` } : {}}
