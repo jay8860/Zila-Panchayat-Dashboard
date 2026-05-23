@@ -24,6 +24,10 @@ const SCHEMES = ["MGNREGA", "SBM-G", "NRLM", "PMAY-G", "PMAY-U"];
 
 const BLOCKS = ["Dantewada", "Geedam", "Kuakonda", "Katekalyan"];
 
+const roundTo = (num, decimals) => {
+    return Number(Math.round(num + 'e' + decimals) + 'e-' + decimals);
+};
+
 const NICLiveDashboard = () => {
     // State management
     const [activeScheme, setActiveScheme] = useState("MGNREGA");
@@ -291,10 +295,6 @@ const NICLiveDashboard = () => {
         
         return totals;
     }, [filteredRows, tableHeaders]);
-
-    const roundTo = (num, decimals) => {
-        return Number(Math.round(num + 'e' + decimals) + 'e-' + decimals);
-    };
 
     // Export Helpers
     const getExportData = () => {
