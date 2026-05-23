@@ -147,21 +147,50 @@ def initialize_data():
             active_cards = val(200, 1200)
             demanded = val(int(active_cards * 0.7), int(active_cards * 0.95))
             provided = val(int(demanded * 0.9), demanded)
+            sc_cards = val(10, int(active_cards * 0.15))
+            st_cards = val(80, int(active_cards * 0.65)) # High ST in Dantewada
+            women_cards = val(int(active_cards * 0.45), int(active_cards * 0.58))
             completed_works = val(15, 95)
             ongoing_works = val(5, 45)
+            person_days = provided * val(20, 50)
+            
             data["MGNREGA"].append({
                 "Block": block,
                 "Gram Panchayat": gp,
+                "Total Registered HHs": active_cards + val(50, 200),
                 "Active Job Cards": active_cards,
-                "Households Demanded": demanded,
-                "Households Provided": provided,
-                "Person-days Generated": provided * val(15, 45),
-                "Women Participation (%)": round(random.uniform(48.5, 62.0), 1),
+                "SC Job Card Holders": sc_cards,
+                "ST Job Card Holders": st_cards,
+                "Women Job Card Holders": women_cards,
+                "Households Demanded Work": demanded,
+                "Households Provided Work": provided,
+                "Total Person-days Generated": person_days,
+                "SC Person-days Generated": int(person_days * 0.08),
+                "ST Person-days Generated": int(person_days * 0.62),
+                "Women Participation Rate (%)": round(random.uniform(49.0, 64.0), 1),
+                "Avg Days of Employment/HH": val(32, 68),
+                "HHs Reached 100 Days": val(2, 35),
                 "Average Daily Wage (INR)": 271,
-                "Pending FTOs": val(0, 12),
+                "Wages Paid (INR Lakhs)": round((person_days * 271) / 100000.0, 2),
+                "Material Cost Paid (INR Lakhs)": round(random.uniform(2.5, 18.0), 2),
+                "Total Expenditure (INR Lakhs)": 0.0, # Will sum below
+                "Pending FTOs Count": val(0, 8),
+                "Rejected FTOs Count": val(0, 4),
+                "Delayed Payments > 15 Days (INR)": val(0, 25000),
+                "Works Sanctioned": completed_works + ongoing_works + val(5, 20),
+                "Works Ongoing": ongoing_works,
                 "Works Completed": completed_works,
-                "Works Ongoing": ongoing_works
+                "Road Works Completed": val(2, 12),
+                "Water Conservation Works": val(5, 28),
+                "Panchayat Bhawan Works": val(0, 2),
+                "Daily Attendance (NMMS)": val(20, 180),
+                "Social Audits Conducted": val(1, 3),
+                "Grievances Registered": val(0, 14),
+                "Grievances Resolved": val(0, 12)
             })
+            # Set total expenditure
+            row = data["MGNREGA"][-1]
+            row["Total Expenditure (INR Lakhs)"] = round(row["Wages Paid (INR Lakhs)"] + row["Material Cost Paid (INR Lakhs)"], 2)
 
             # 2. SBM-G
             target_hh = val(120, 850)
@@ -175,10 +204,17 @@ def initialize_data():
                 "Target Households": target_hh,
                 "IHHL Constructed": constructed,
                 "IHHL Coverage (%)": coverage,
-                "ODF Declared": odf_status,
-                "ODF+ Status": odf_plus,
-                "SLWM Assets": val(2, 14),
-                "Verification Round": random.choice(["2nd Round Verified", "1st Round Verified", "3rd Round Verified"]) if odf_plus == "Model" else random.choice(["1st Round Verified", "None"])
+                "Villages Declared ODF": 1 if odf_status == "Yes" else 0,
+                "ODF Verified Villages": 1 if odf_status == "Yes" and random.random() > 0.3 else 0,
+                "ODF+ Aspiring Villages": 1 if odf_plus == "Aspiring" else 0,
+                "ODF+ Rising Villages": 1 if odf_plus == "Rising" else 0,
+                "ODF+ Model Villages": 1 if odf_plus == "Model" else 0,
+                "Solid Waste Management Units": val(0, 4),
+                "Liquid Waste Management Units": val(0, 4),
+                "Community Sanitary Complexes": val(0, 2),
+                "Geo-tagged Assets Count": val(5, 38),
+                "Assets with Photos Uploaded": val(3, 35),
+                "Verification Rounds Completed": val(1, 3) if odf_plus == "Model" else val(0, 1)
             })
 
             # 3. NRLM
@@ -191,13 +227,21 @@ def initialize_data():
             data["NRLM"].append({
                 "Block": block,
                 "Gram Panchayat": gp,
-                "SHGs Formed": shgs,
-                "Members Mobilised": members,
-                "Credit-Linked SHGs": credit_linked,
+                "Total SHGs Formed": shgs,
+                "New SHGs Formed (FY)": val(0, 8),
+                "SHG Members Mobilised": members,
+                "SC/ST Members Mobilised": int(members * random.uniform(0.5, 0.75)),
+                "SHGs Credit Linked": credit_linked,
                 "Bank Linkage Rate (%)": linkage_rate,
-                "Cumulative Loan (Lakhs)": round(credit_linked * random.uniform(1.2, 2.5), 1),
+                "Credit Mobilised (INR Lakhs)": round(credit_linked * random.uniform(1.2, 2.5), 1),
+                "Avg Loan per SHG (INR Lakhs)": round(random.uniform(1.0, 1.8), 2),
+                "Outstanding Loan (INR Lakhs)": round(credit_linked * random.uniform(0.6, 1.1), 1),
+                "Pariwar Saturation Rate (%)": round(random.uniform(62.0, 95.0), 1),
                 "Lakhpati Didi Target": lakhpati_target,
-                "Verified Lakhpati Didis": lakhpati_verified
+                "Verified Lakhpati Didis": lakhpati_verified,
+                "Lakhpati Saturation Rate (%)": round((lakhpati_verified / lakhpati_target) * 100, 1),
+                "CIF Released (INR Lakhs)": round(shgs * 0.5, 2),
+                "RF Released (INR Lakhs)": round(shgs * 0.15, 2)
             })
 
             # 4. PMAY-G
@@ -213,15 +257,25 @@ def initialize_data():
             data["PMAY-G"].append({
                 "Block": block,
                 "Gram Panchayat": gp,
-                "Target Houses": pmay_target,
-                "Completed Houses": pmay_completed,
+                "Cumulative Target Houses": pmay_target,
+                "Houses Sanctioned": pmay_target - val(0, 8),
+                "1st Instalment Released": pmay_target - val(0, 12),
+                "2nd Instalment Released": pmay_target - val(4, 25),
+                "3rd Instalment Released": pmay_completed + val(0, 15),
+                "Houses Completed": pmay_completed,
                 "Completion Rate (%)": round((pmay_completed / pmay_target) * 100, 1),
                 "Stage: Not Started": max(0, stg_not_started),
-                "Stage: Plinth": max(0, stg_plinth),
-                "Stage: Lintel/Roof": max(0, stg_lintel),
-                "Stage: Roof Casting/Plaster": max(0, stg_roof),
+                "Stage: Foundation/Plinth": max(0, stg_plinth),
+                "Stage: Lintel": max(0, stg_lintel),
+                "Stage: Roof level": max(0, stg_roof - val(0, 5)),
+                "Stage: Roof Casting/Plaster": max(0, val(0, 5)),
                 "Geo-tagged Houses": val(pmay_completed, pmay_target),
-                "Awaiting Instalment": val(0, 10)
+                "Houses Stuck at Foundation": val(0, max(1, stg_plinth)),
+                "Houses Stuck at Lintel": val(0, max(1, stg_lintel)),
+                "Houses Stuck at Roof": val(0, max(1, stg_roof)),
+                "Awaiting Instalment": val(0, 10),
+                "Total Funds Released (Lakhs)": round(pmay_completed * 1.2 + (pmay_target - pmay_completed) * 0.4, 2),
+                "MGNREGA Labour Days Converged": pmay_completed * val(75, 95)
             })
 
     # Populate ULB-level PMAY-U
@@ -236,8 +290,11 @@ def initialize_data():
             "Grounded Houses": grounded,
             "Completed Houses": completed,
             "Completion Rate (%)": rate,
-            "Central Share (Lakhs)": round(sanc * 1.5, 1),
-            "Funds Utilised (%)": round(random.uniform(84.0, 97.5), 1)
+            "Central Share Released (Lakhs)": round(sanc * 1.5, 1),
+            "Funds Utilised (%)": round(random.uniform(84.0, 97.5), 1),
+            "Affordable Housing Partner (AHP)": val(0, sanc // 3),
+            "Beneficiary Led Construction (BLC)": grounded - val(0, 100),
+            "Utilization Certificates Submitted (Lakhs)": round(sanc * 1.2, 1)
         })
 
     return data
@@ -251,9 +308,12 @@ def load_data():
     try:
         with open(NIC_DB_FILE, "r") as f:
             data = json.load(f)
-            # Migration check: if the database has less than 50 GPs, force re-initialize with full set from CSV
-            if "MGNREGA" not in data or len(data["MGNREGA"]) < 50:
-                print("Upgrading database: Loading full Gram Panchayat list from CSV...")
+            # Migration check: if the database has less than 50 GPs, or is missing the new granular keys, force re-initialize
+            has_mgnrega = "MGNREGA" in data and len(data["MGNREGA"]) > 0
+            has_granular_keys = has_mgnrega and "Total Registered HHs" in data["MGNREGA"][0]
+            
+            if not has_mgnrega or len(data["MGNREGA"]) < 50 or not has_granular_keys:
+                print("Upgrading database: Loading full Gram Panchayat list and granular parameters...")
                 data = initialize_data()
                 save_data(data)
             return data
@@ -305,12 +365,25 @@ def progress_data(data):
         if random.random() > 0.6:  # 40% chance of update
             added_workers = random.randint(1, 5)
             row["Active Job Cards"] += added_workers
-            row["Households Demanded"] += random.randint(0, added_workers)
-            row["Households Provided"] += random.randint(0, added_workers)
-            row["Person-days Generated"] += random.randint(10, 150)
-            row["Women Participation (%)"] = round(max(30.0, min(80.0, row["Women Participation (%)"] + random.uniform(-0.5, 0.5))), 1)
-            if row["Pending FTOs"] > 0 and random.random() > 0.5:
-                row["Pending FTOs"] -= random.randint(1, min(row["Pending FTOs"], 3))
+            row["Total Registered HHs"] += added_workers + random.randint(0, 2)
+            row["SC Job Card Holders"] += random.choice([0, 1])
+            row["ST Job Card Holders"] += random.choice([0, 1, 2])
+            row["Women Job Card Holders"] += random.choice([0, 1, 2])
+            row["Households Demanded Work"] += random.randint(0, added_workers)
+            row["Households Provided Work"] += random.randint(0, added_workers)
+            
+            days = random.randint(10, 150)
+            row["Total Person-days Generated"] += days
+            row["SC Person-days Generated"] += int(days * 0.08)
+            row["ST Person-days Generated"] += int(days * 0.62)
+            row["Women Participation Rate (%)"] = round(max(30.0, min(80.0, row["Women Participation Rate (%)"] + random.uniform(-0.5, 0.5))), 1)
+            
+            row["Wages Paid (INR Lakhs)"] = round((row["Total Person-days Generated"] * 271) / 100000.0, 2)
+            row["Material Cost Paid (INR Lakhs)"] = round(row["Material Cost Paid (INR Lakhs)"] + random.uniform(0, 0.5), 2)
+            row["Total Expenditure (INR Lakhs)"] = round(row["Wages Paid (INR Lakhs)"] + row["Material Cost Paid (INR Lakhs)"], 2)
+            
+            if row["Pending FTOs Count"] > 0 and random.random() > 0.5:
+                row["Pending FTOs Count"] -= random.randint(1, min(row["Pending FTOs Count"], 2))
             row["Works Completed"] += random.choice([0, 1, 0, 0])
             row["Works Ongoing"] = max(0, row["Works Ongoing"] + random.choice([-1, 0, 1, 0]))
 
@@ -322,50 +395,64 @@ def progress_data(data):
             row["IHHL Constructed"] += added_toilets
             row["IHHL Coverage (%)"] = round((row["IHHL Constructed"] / row["Target Households"]) * 100, 1)
             if row["IHHL Coverage (%)"] >= 95.0:
-                row["ODF Declared"] = "Yes"
-                if row["ODF+ Status"] != "Model" and random.random() > 0.7:
-                    row["ODF+ Status"] = "Model"
-                    row["Verification Round"] = "3rd Round Verified"
+                row["Villages Declared ODF"] = 1
+                row["ODF Verified Villages"] = 1
+                row["ODF+ Aspiring Villages"] = 0
+                row["ODF+ Rising Villages"] = 0
+                row["ODF+ Model Villages"] = 1
+                row["Verification Rounds Completed"] = 3
             row["SLWM Assets"] += random.choice([0, 1, 0])
+            row["Geo-tagged Assets Count"] += random.choice([0, 1, 2])
+            row["Assets with Photos Uploaded"] = min(row["Geo-tagged Assets Count"], row["Assets with Photos Uploaded"] + random.choice([0, 1, 2]))
 
     # 3. NRLM
     for row in data["NRLM"]:
         if random.random() > 0.6:
-            row["SHGs Formed"] += random.choice([0, 1, 0])
-            row["Members Mobilised"] = row["SHGs Formed"] * random.randint(10, 12)
-            row["Credit-Linked SHGs"] = min(row["SHGs Formed"], row["Credit-Linked SHGs"] + random.choice([0, 1, 0]))
-            row["Bank Linkage Rate (%)"] = round((row["Credit-Linked SHGs"] / row["SHGs Formed"]) * 100, 1)
-            row["Cumulative Loan (Lakhs)"] = round(row["Cumulative Loan (Lakhs)"] + random.uniform(0, 2.5), 1)
+            added_shgs = random.choice([0, 1, 0])
+            row["Total SHGs Formed"] += added_shgs
+            row["New SHGs Formed (FY)"] += added_shgs
+            row["SHG Members Mobilised"] = row["Total SHGs Formed"] * random.randint(10, 12)
+            row["SC/ST Members Mobilised"] = int(row["SHG Members Mobilised"] * random.uniform(0.5, 0.75))
+            row["SHGs Credit Linked"] = min(row["Total SHGs Formed"], row["SHGs Credit Linked"] + random.choice([0, 1, 0]))
+            row["Bank Linkage Rate (%)"] = round((row["SHGs Credit Linked"] / row["Total SHGs Formed"]) * 100, 1)
+            row["Credit Mobilised (INR Lakhs)"] = round(row["Credit Mobilised (INR Lakhs)"] + random.uniform(0, 2.5), 1)
+            row["Outstanding Loan (INR Lakhs)"] = round(row["Outstanding Loan (INR Lakhs)"] + random.uniform(0, 1.5), 1)
             if row["Verified Lakhpati Didis"] < row["Lakhpati Didi Target"]:
                 row["Verified Lakhpati Didis"] += random.choice([0, 1, 0])
+                row["Lakhpati Saturation Rate (%)"] = round((row["Verified Lakhpati Didis"] / row["Lakhpati Didi Target"]) * 100, 1)
 
     # 4. PMAY-G
     for row in data["PMAY-G"]:
         if random.random() > 0.5:
-            # Progression logic: move houses from stages to completion
             if row["Stage: Roof Casting/Plaster"] > 0:
                 completed = random.randint(1, min(row["Stage: Roof Casting/Plaster"], 2))
                 row["Stage: Roof Casting/Plaster"] -= completed
-                row["Completed Houses"] += completed
+                row["Houses Completed"] += completed
             
-            if row["Stage: Lintel/Roof"] > 0:
-                advanced = random.randint(1, min(row["Stage: Lintel/Roof"], 2))
-                row["Stage: Lintel/Roof"] -= advanced
+            if row["Stage: Roof level"] > 0:
+                advanced = random.randint(1, min(row["Stage: Roof level"], 2))
+                row["Stage: Roof level"] -= advanced
                 row["Stage: Roof Casting/Plaster"] += advanced
                 
-            if row["Stage: Plinth"] > 0:
-                advanced = random.randint(1, min(row["Stage: Plinth"], 2))
-                row["Stage: Plinth"] -= advanced
-                row["Stage: Lintel/Roof"] += advanced
+            if row["Stage: Lintel"] > 0:
+                advanced = random.randint(1, min(row["Stage: Lintel"], 2))
+                row["Stage: Lintel"] -= advanced
+                row["Stage: Roof level"] += advanced
+
+            if row["Stage: Foundation/Plinth"] > 0:
+                advanced = random.randint(1, min(row["Stage: Foundation/Plinth"], 2))
+                row["Stage: Foundation/Plinth"] -= advanced
+                row["Stage: Lintel"] += advanced
 
             if row["Stage: Not Started"] > 0:
                 started = random.randint(1, min(row["Stage: Not Started"], 2))
                 row["Stage: Not Started"] -= started
-                row["Stage: Plinth"] += started
+                row["Stage: Foundation/Plinth"] += started
 
-            row["Completion Rate (%)"] = round((row["Completed Houses"] / row["Target Houses"]) * 100, 1)
-            row["Geo-tagged Houses"] = min(row["Target Houses"], row["Geo-tagged Houses"] + random.choice([0, 1, 2]))
-            row["Awaiting Instalment"] = max(0, row["Awaiting Instalment"] + random.choice([-1, 0, 1]))
+            row["Completion Rate (%)"] = round((row["Houses Completed"] / row["Cumulative Target Houses"]) * 100, 1)
+            row["Geo-tagged Houses"] = min(row["Cumulative Target Houses"], row["Geo-tagged Houses"] + random.choice([0, 1, 2]))
+            row["Total Funds Released (Lakhs)"] = round(row["Total Funds Released (Lakhs)"] + random.uniform(0.5, 3.5), 2)
+            row["MGNREGA Labour Days Converged"] = row["Houses Completed"] * random.randint(75, 95)
 
     # 5. PMAY-U
     for row in data["PMAY-U"]:
@@ -373,8 +460,9 @@ def progress_data(data):
             row["Grounded Houses"] = min(row["Sanctioned Houses"], row["Grounded Houses"] + random.randint(0, 3))
             row["Completed Houses"] = min(row["Grounded Houses"], row["Completed Houses"] + random.randint(0, 4))
             row["Completion Rate (%)"] = round((row["Completed Houses"] / row["Sanctioned Houses"]) * 100, 1)
-            row["Central Share (Lakhs)"] = round(row["Central Share (Lakhs)"] + random.uniform(0.0, 5.0), 1)
+            row["Central Share Released (Lakhs)"] = round(row["Central Share Released (Lakhs)"] + random.uniform(0.0, 5.0), 1)
             row["Funds Utilised (%)"] = round(min(100.0, row["Funds Utilised (%)"] + random.uniform(-0.2, 0.5)), 1)
+            row["Utilization Certificates Submitted (Lakhs)"] = round(row["Utilization Certificates Submitted (Lakhs)"] + random.uniform(0.0, 4.0), 1)
 
     # Sync time
     data["lastSynced"] = datetime.now().isoformat()
